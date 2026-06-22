@@ -1,0 +1,22 @@
+node_modules/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+tests/.tmp/
+.claude/
+.do/
+out/
+.idea/
+.superpowers/
+.github/
+
+# eval data + app-coupled harness: hold a private target codebase's source, paths,
+# class names, and package — never commit. Genericize before committing any of these.
+bench/style-eval/results/
+bench/style-eval/app_tasks.py
+bench/style-eval/grounding_judge.py
+__pycache__/
+*.pyc
+

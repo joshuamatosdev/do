@@ -1,0 +1,386 @@
+# adr-implementation-spec.template.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Deterministic structure contract for an ADR + Implementation Spec — the single
+# comprehensive execution-contract document the `adr` skill produces in `spec` mode.
+#
+# This template MIRRORS the golden reference exactly:
+#   whiskeydriod-ide/docs/
+#     WhiskeyDroid_IDE_Sessions_First_ADR_and_Implementation_Spec.md
+# Every primary title, table, table-column, and list below matches the golden's
+# skeleton. A run fills the {placeholders}; it never renames a section.
+#
+# THE RULE — floors and targets, never limits:
+#   - floor   = produce AT LEAST this many. Below the floor fails the rubric.
+#   - target  = aim for this many.
+#   - Neither is a cap. When the source material justifies more, produce more.
+#
+# This file is intentionally EXCLUDED from the plain-words check (it is not listed
+# in tools/plain-words.js DOCTRINE_PROSE) — it carries field names and structural
+# vocabulary that must match the golden, not the common-word list.
+#
+# The rubric (skills/adr/references/rubric.md, scored by tools/adr-spec-rubric.js)
+# reads this file: every `required: true` section, every block floor, and every
+# required field becomes a check. Keep the template and the rubric in lockstep.
+# ─────────────────────────────────────────────────────────────────────────────
+
+template:
+  id: adr-implementation-spec
+  version: 1
+  mirrors: WhiskeyDroid_IDE_Sessions_First_ADR_and_Implementation_Spec.md
+  rule: "floors and targets, not limits — at least the floor, aim for the target, exceed when justified"
+  excluded_from_plain_words: true
+  section_floor: 20            # the document must have at least 20 primary sections
+
+# Block schema the rubric scorer understands:
+#   kind: paragraphs | list | table | diagram | code | statemachine | attributes
+#   paragraphs : { floor, target, sentences_per_paragraph: { floor, target } }
+#   list       : items: { floor, target }
+#   table      : columns: [..], rows: { floor, target }
+#   diagram/code/statemachine : required: true   (exactly one, presence-checked)
+#   attributes : rows: [..]   (a fixed key/value attribute table)
+# Every block may carry `instruction` (what to write) and `required` (default true).
+
+# Placeholders the run resolves from source acquisition + resolved decisions.
+vars:
+  product:           "<product name>"
+  subject:           "<one-line subject — e.g. Sessions-first agent IDE>"
+  version:           "<version label — e.g. v1>"
+  adr_id:            "<ADR id — e.g. ADR-2026-06-16>"
+  decision_title:    "<one-line decision — e.g. Complete X as a Sessions-first product>"
+  primary_repository: "<owner/repo>"
+  source_report_id:  "<report id, or 'none — grounded by direct recon'>"
+
+# ── Title block ──────────────────────────────────────────────────────────────
+# ADR all-caps + version on line 1; the title on the next line; the subtext line;
+# then Date and Status; then the Field|Value metadata table.
+title_block:
+  line_1: "ADR {version}"                                            # ADR in all caps, version next to it
+  line_2: "{product} {subject} Implementation Specification"         # title on the next line
+  subtext: "_Single source of truth for completing the {product} product_"
+  fields:                                                            # after the title
+    - { name: Date,   required: true }
+    - { name: Status, required: true }
+
+metadata_table:
+  kind: table
+  columns: [Field, Value]
+  rows:                                # mirror the golden exactly — these field names are allowed prose
+    - Document status
+    - ADR decision
+    - Source report
+    - Source generated at
+    - Source confidence
+    - Primary repository
+    - Primary audience
+  instruction: >
+    One row per field. Source rows come from the status report when one was used;
+    when grounded by direct recon, set Source report to 'none — direct recon',
+    Source generated at to the run date, and Source confidence to the recon confidence.
+
+# ── Sections (20 floor — mirror the golden skeleton) ─────────────────────────
+sections:
+
+  - n: 1
+    title: "Executive Direction"
+    required: true
+    blocks:
+      - kind: paragraphs
+        paragraphs: { floor: 2, target: 2, sentences_per_paragraph: { floor: 3, target: 4 } }
+        instruction: >
+          Para 1: what the product WILL be in one prescriptive statement, and what it is not.
+          Para 2: the immediate goal and what 'complete' observably means.
+      - kind: list
+        title: "Non-negotiable product decisions"
+        items: { floor: 3, target: 7 }
+        instruction: "Each item is a hard product decision stated as a rule that may not be re-litigated."
+      - kind: list
+        title: "End product definition"
+        lead: "One sub-statement sentence naming the end product, then the observable outcomes."
+        items: { floor: 4, target: 5 }
+        instruction: "Observable user outcomes that together mean 'done'."
+
+  - n: 2
+    title: "Context and Problem Statement"
+    required: true
+    blocks:
+      - kind: paragraphs
+        paragraphs: { floor: 2, target: 2, sentences_per_paragraph: { floor: 3, target: 4 } }
+        instruction: "Where the system is now and why the work exists. Ground in the source."
+      - kind: list
+        title: "Current constraints from the source"
+        items: { floor: 3, target: 5 }
+      - kind: paragraphs
+        title: "Primary engineering problem"
+        paragraphs: { floor: 1, target: 1, sentences_per_paragraph: { floor: 2, target: 4 } }
+        instruction: "The one problem the spec exists to resolve, stated sharply."
+
+  - n: 3
+    title: "Scope"
+    required: true
+    blocks:
+      - kind: list
+        title: "In scope"
+        items: { floor: 5, target: 10 }
+      - kind: list
+        title: "Out of scope"
+        items: { floor: 3, target: 5 }
+
+  - n: 4
+    title: "Architecture Decision Record"
+    required: true
+    blocks:
+      - kind: attributes
+        title: "{adr_id}: {decision_title}"
+        rows: [Status, Decision owner, Decision date, Decision outcome]
+        instruction: "The ADR header attribute table — one decision/value per row."
+      - kind: list
+        title: "Decision drivers"
+        items: { floor: 4, target: 6 }
+      - kind: table
+        title: "Accepted decisions"
+        columns: [ID, Decision, Instruction]
+        rows: { floor: 5, target: 8 }
+        instruction: "ID is D-1, D-2, … Each row: a decision and the instruction that enforces it."
+      - kind: table
+        title: "Rejected alternatives"
+        columns: [Rejected alternative, Reason]
+        rows: { floor: 3, target: 5 }
+        instruction: "Every accepted decision with a real fork must show the path not taken and why."
+      - kind: list
+        title: "Consequences"
+        items: { floor: 4, target: 6 }
+
+  - n: 5
+    title: "Target Architecture"
+    required: true
+    blocks:
+      - kind: table
+        title: "Component boundaries"
+        columns: [Component, Owns, Must not own]
+        rows: { floor: 4, target: 6 }
+      - kind: diagram
+        title: "Topology"
+        required: true
+        instruction: "One flow/topology diagram (mermaid flowchart) of the components and their edges."
+      - kind: list
+        title: "Layering rules"
+        items: { floor: 3, target: 5 }
+      - kind: list
+        title: "Canonical data flows"
+        items: { floor: 4, target: 7 }
+        instruction: "Numbered end-to-end flows naming the real entry points and boundaries."
+
+  - n: 6
+    title: "Functional Requirements"
+    required: true
+    intro: "Each requirement is release-blocking unless marked optional."
+    repeating:
+      id_prefix: "FR-"
+      count: { floor: 6, target: 10 }
+      per_item:
+        - kind: paragraphs
+          title: "Intent"
+          paragraphs: { floor: 1, target: 1, sentences_per_paragraph: { floor: 1, target: 2 } }
+        - kind: list
+          title: "Required behavior"
+          items: { floor: 3, target: 5 }
+        - kind: list
+          title: "Acceptance criteria"
+          items: { floor: 3, target: 4 }
+        - kind: list
+          title: "Required verification"
+          items: { floor: 1, target: 3 }
+          instruction: "The concrete test/check that proves the behavior — never 'it renders'."
+
+  - n: 7
+    title: "Non-Functional Requirements"
+    required: true
+    blocks:
+      - kind: table
+        columns: [Quality attribute, Requirement]
+        rows: { floor: 6, target: 8 }
+        instruction: "Reliability, Security, Privacy, Maintainability, Performance, Accessibility, Testability, Operability — keep the ones the system has."
+
+  - n: 8
+    title: "Domain Component Specification"
+    required: false
+    condition: "Include one per major domain subsystem with its own contract (e.g. a provider/adapter family). Golden = 'Provider Architecture Specification'."
+    repeating:
+      id_prefix: "DC-"
+      count: { floor: 1, target: 3 }
+      per_item:
+        - kind: code
+          title: "Contract"
+          required: true
+          instruction: "The generic registration/contract shape the subsystem exposes."
+        - kind: table
+          title: "v1 policy"
+          columns: [Category, v1 status, Implementation instruction]
+          rows: { floor: 3, target: 6 }
+        - kind: table
+          title: "State / health model"
+          columns: [State, Meaning, Required behavior]
+          rows: { floor: 4, target: 8 }
+        - kind: list
+          title: "Acceptance"
+          items: { floor: 4, target: 6 }
+
+  - n: 9
+    title: "Domain Workflow Specification"
+    required: false
+    condition: "Include when the product has a structured workflow with verifiable states. Golden = 'Interface Mode Specification'."
+    blocks:
+      - kind: statemachine
+        title: "Required state machine"
+        required: true
+      - kind: list
+        title: "Workflow requirements"
+        items: { floor: 4, target: 6 }
+      - kind: list
+        title: "Definition of done"
+        items: { floor: 4, target: 6 }
+
+  - n: 10
+    title: "Settings, Flags, and Configuration"
+    required: true
+    blocks:
+      - kind: table
+        columns: [Setting / flag, Decision, Required behavior]
+        rows: { floor: 3, target: 6 }
+      - kind: list
+        title: "Documentation update requirements"
+        items: { floor: 3, target: 5 }
+
+  - n: 11
+    title: "Implementation Plan"
+    required: true
+    blocks:
+      - kind: table
+        title: "Phases"
+        columns: [Phase, Name, Engineering instructions, Exit gate]
+        rows: { floor: 5, target: 8 }
+        instruction: "Every phase ends with an exit gate that proves it — never a phase without a gate."
+      - kind: table
+        title: "Workstream ownership"
+        columns: [Workstream, Accountable owner, Primary deliverables]
+        rows: { floor: 4, target: 6 }
+      - kind: list
+        title: "Common engineering instructions"
+        items: { floor: 5, target: 8 }
+
+  - n: 12
+    title: "Test and Verification Strategy"
+    required: true
+    blocks:
+      - kind: table
+        title: "Required test tiers"
+        columns: [Tier, Required coverage, Examples / target areas]
+        rows: { floor: 5, target: 7 }
+      - kind: list
+        title: "Release-blocking verification checklist"
+        items: { floor: 6, target: 11 }
+      - kind: table
+        title: "Acceptance scenarios"
+        columns: [Scenario, Given, When, Then]
+        rows: { floor: 5, target: 8 }
+
+  - n: 13
+    title: "Definition of Done"
+    required: true
+    blocks:
+      - kind: list
+        title: "Product-level definition of done"
+        items: { floor: 8, target: 12 }
+      - kind: list
+        title: "PR-level definition of done"
+        items: { floor: 6, target: 9 }
+      - kind: list
+        title: "Cleanup / legacy definition of done"
+        items: { floor: 3, target: 5 }
+        required: false
+        condition: "Include when legacy removal or migration is in scope."
+
+  - n: 14
+    title: "Rollout and Rollback"
+    required: true
+    blocks:
+      - kind: list
+        title: "Rollout sequence"
+        items: { floor: 5, target: 8 }
+      - kind: list
+        title: "Rollback criteria"
+        items: { floor: 4, target: 6 }
+      - kind: list
+        title: "Operational readiness"
+        items: { floor: 3, target: 4 }
+
+  - n: 15
+    title: "Risk Register"
+    required: true
+    blocks:
+      - kind: table
+        columns: [ID, Risk, Severity, Likelihood, Owner, Mitigation]
+        rows: { floor: 5, target: 8 }
+        instruction: "ID is R-1, R-2, … Severity/Likelihood from {low, medium, high}."
+      - kind: list
+        title: "Risk handling directives"
+        items: { floor: 3, target: 6 }
+
+  - n: 16
+    title: "Traceability Matrix"
+    required: true
+    blocks:
+      - kind: table
+        columns: [Source observation / risk, Spec decision or requirement, Verification]
+        rows: { floor: 5, target: 8 }
+        instruction: "Every row ties a source signal to the decision/FR that answers it and the test that proves it."
+
+  - n: 17
+    title: "Engineering Backlog"
+    required: true
+    blocks:
+      - kind: table
+        title: "Required epics and representative stories"
+        columns: [Epic, Representative stories]
+        rows: { floor: 5, target: 8 }
+        instruction: "Epic id is E-1, E-2, …"
+      - kind: code
+        title: "Suggested issue template"
+        required: true
+
+  - n: 18
+    title: "Appendix A — Source Evidence Summary"
+    required: true
+    blocks:
+      - kind: table
+        title: "Architecture invariants from source"
+        columns: [Invariant, Status, Evidence reference]
+        rows: { floor: 4, target: 6 }
+        instruction: "Status from {upheld, at-risk, violated}. Evidence reference is file:line."
+      - kind: table
+        title: "Open decisions resolved"
+        columns: [Original open decision, Recommendation, Resolution]
+        rows: { floor: 3, target: 6 }
+      - kind: list
+        title: "Relevant source paths"
+        items: { floor: 5, target: 15 }
+        instruction: "file:line citations that ground the spec."
+
+  - n: 19
+    title: "Appendix B — Glossary"
+    required: true
+    blocks:
+      - kind: table
+        columns: [Term, Meaning]
+        rows: { floor: 6, target: 10 }
+
+  - n: 20
+    title: "Final Release Gate"
+    required: true
+    blocks:
+      - kind: paragraphs
+        paragraphs: { floor: 1, target: 1, sentences_per_paragraph: { floor: 1, target: 2 } }
+        instruction: "One line naming who signs off and against what."
+      - kind: list
+        title: "Sign-off checklist"
+        items: { floor: 5, target: 7 }

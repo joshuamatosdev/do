@@ -1,0 +1,10 @@
+{
+  "name": "commit-doctor",
+  "description": "On a FAILED `git commit`, dispatches the do:commit agent to heal it (classify cause, fix, re-stage, retry — never --no-verify), with bounded retries (3) and an incident log on the 4th. PostToolUse hook; self-gates on install. Requires the jq CLI.",
+  "stackHint": [],
+  "files": [],
+  "appendFormat": "format-note.md",
+  "settingsPartial": null,
+  "deps": [],
+  "externalDeps": ["jq"]
+}

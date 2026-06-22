@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "doctrineone-labs",
+  "description": "do — engineering workflow for AI-assisted engineering.",
+  "owner": {
+    "name": "Joshua Matos",
+    "url": "https://github.com/joshuamatosdev"
+  },
+  "plugins": [
+    {
+      "name": "do",
+      "description": "Install the do engineering workflow into any project.",
+      "source": "./",
+      "category": "workflow",
+      "license": "Apache-2.0"
+    }
+  ]
+}

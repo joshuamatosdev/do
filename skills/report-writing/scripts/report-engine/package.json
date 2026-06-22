@@ -1,0 +1,19 @@
+{
+  "name": "do-report-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic JSON-payload -> static single-file HTML report compiler. The engine owns ALL presentation; report authors supply data only. Audiences, sections, and theme are data-driven.",
+  "bin": {
+    "do-report": "src/cli.js"
+  },
+  "scripts": {
+    "render": "node src/cli.js render",
+    "validate": "node src/cli.js validate",
+    "golden:update": "node src/cli.js golden-update"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {}
+}

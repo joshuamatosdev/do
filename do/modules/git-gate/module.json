@@ -1,0 +1,9 @@
+{
+  "name": "git-gate",
+  "description": "OPT-IN default-deny git allowlist (PreToolUse Bash|PowerShell). Blocks destructive / history-rewriting / working-tree-clobbering git -- reset --hard, checkout, switch, rebase, merge, cherry-pick, force-push, stash, branch create/delete/rename, clean, rm, and commit --no-verify/--amend -- while allowing read-only inspection plus safe mutations (add, commit, push non-force, fetch, pull, clone, apply, mv, init). Decision logic in git-gate.cjs; node required (fail-open if absent). The hook is plugin-declared and self-gates on this module being recorded in .claude/do.manifest.json, so it enforces ONLY where you opted in with `/do:run setup --modules=git-gate`. The user may permit --no-verify/--amend with DO_GIT_GATE_ALLOW_COMMIT_BYPASS=1.",
+  "stackHint": [],
+  "files": [],
+  "settingsPartial": null,
+  "deps": [],
+  "externalDeps": []
+}

@@ -1,0 +1,19 @@
+# Example source — a working demo. Delete this directory once you add real sources.
+
+[source]
+id        = "example"
+name      = "Example Source"
+upstream  = "local"
+license   = "none"
+purpose   = "A tiny worked example so `build` and `lookup` run out of the box."
+
+[ref]
+ref         = "v0"
+commit_sha  = "0000000000000000000000000000000000000000"
+commit_date = "2026-01-01T00:00:00Z"
+
+[ingest.docs]
+roots   = ["docs"]
+include = ["**/*.md"]
+exclude = []
+notes   = "The example docs under docs/."

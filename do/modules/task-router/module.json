@@ -1,0 +1,10 @@
+{
+  "name": "task-router",
+  "description": "Reactive task router (do-route): understand a task, classify its intent, and dispatch to the best-fit do agent, a team (do-team / red-blue), or general-purpose. Works with plain subagents out of the box; upgrades to a live agent-team when the experimental flag is on, which the agent-team dependency enables.",
+  "stackHint": [],
+  "files": [
+    ["do-route/SKILL.md", ".claude/skills/do-route/SKILL.md"]
+  ],
+  "deps": ["agent-team"],
+  "externalDeps": []
+}

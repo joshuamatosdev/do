@@ -1,0 +1,42 @@
+# Provenance + ingest config for one documentation source.
+# Copy this to sources/<id>/source.toml and fill it in. One directory per source.
+#
+# The starter index reads [source] and [ingest.*] and indexes Markdown/text.
+# The [ref], [embed], and [index] blocks are recorded for provenance and for the
+# embeddings upgrade path — the lexical starter does not need them to run.
+
+[source]
+id        = "example"
+name      = "Example Source"
+upstream  = "https://example.com/docs"          # where the docs come from
+license   = "unknown"
+purpose   = "One or two sentences: what this source grounds answers about."
+
+[ref]
+# Pin to an exact version so citations are reproducible. Record what you pinned.
+ref         = "v1.0.0"
+commit_sha  = ""                                 # the upstream commit you indexed
+commit_date = ""                                 # ISO-8601, e.g. 2026-01-01T00:00:00Z
+
+# ─── Ingest configuration ─────────────────────────────────────────────────────
+# One or more [ingest.<name>] blocks. roots are relative to this source dir.
+# include/exclude are simple globs (* and ** supported). The starter indexes
+# .md, .markdown, and .txt files.
+
+[ingest.docs]
+roots   = ["docs"]
+include = ["**/*.md"]
+exclude = []
+notes   = "What lives under these roots."
+
+# ─── Embeddings upgrade (optional — not used by the lexical starter) ───────────
+# Record the intended embedding model + index backend here when you upgrade to
+# semantic search. See the README "Adding embeddings" section.
+
+[embed]
+model     = ""                                   # e.g. BAAI/bge-small-en-v1.5
+backend   = ""                                   # e.g. fastembed, transformers.js
+
+[index]
+backend   = ""                                   # e.g. sqlite + a vector extension
+file      = ""

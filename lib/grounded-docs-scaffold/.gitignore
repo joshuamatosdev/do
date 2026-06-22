@@ -1,0 +1,7 @@
+# Derived build artifacts — rebuildable from sources/, do not commit.
+manifests/chunks.jsonl
+index/
+corpus/
+
+# Cloned upstream source repos (provenance is the source.toml; the clone is not).
+sources/*/repo/

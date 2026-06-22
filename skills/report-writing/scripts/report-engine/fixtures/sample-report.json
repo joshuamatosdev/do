@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "reportId": "RPT-2026-01-01-sample",
+    "title": "Sample Delivery Report",
+    "reportKind": "Engineering Delivery Report",
+    "subjectType": "feature",
+    "subject": "example feature slice",
+    "generatedAt": "2026-01-01T00:00:00Z",
+    "authorAgent": "do:docs",
+    "gitRange": "aaaaaaa..bbbbbbb",
+    "repos": ["example-repo"],
+    "audiences": ["distinguished-engineer", "system-engineer", "tech-lead"]
+  },
+  "executiveVerdict": {
+    "decision": "ship",
+    "confidence": "high",
+    "completionPct": 100,
+    "summary": "The slice meets its acceptance criteria and the invariants hold. Tests pass and the change surface is bounded. Recommend ship.",
+    "topRisks": ["A follow-up migration is still pending in a later release."]
+  },
+  "scopeInputs": {
+    "repos": ["example-repo"],
+    "commits": ["aaaaaaa feat: add example slice", "bbbbbbb test: cover the slice"],
+    "filesTouched": 7,
+    "timeframe": "one working day",
+    "evidenceSources": ["git log", "test run output", "the changed source files"]
+  },
+  "changeInventory": {
+    "entries": [
+      { "path": "src/feature.js", "changeType": "added", "module": "feature", "loc": 120, "concern": "feature", "riskTag": "medium" },
+      { "path": "test/feature.test.js", "changeType": "added", "module": "feature", "loc": 90, "concern": "test" }
+    ]
+  },
+  "architectureImpact": {
+    "boundaries": ["feature module public surface"],
+    "invariants": [
+      { "statement": "Callers can not reach internal state directly.", "status": "upheld", "evidence": "src/feature.js:12" }
+    ],
+    "adrAlignment": [
+      { "adr": "ADR-0001", "status": "aligned", "note": "Follows the module boundary rule." }
+    ],
+    "rejectedAlternatives": [
+      { "statement": "A shared mutable singleton was rejected for testability.", "evidence": "design note" }
+    ]
+  },
+  "systemImpact": {
+    "topology": "No new services. One module added behind the existing public surface.",
+    "dependencies": ["none added"],
+    "deployOrder": ["standard single-artifact deploy"],
+    "dataFlows": ["request -> feature module -> response"],
+    "operationalConcerns": [
+      { "statement": "No new run-time cost beyond one module load.", "evidence": "unverified" }
+    ]
+  },
+  "riskRegister": {
+    "risks": [
+      { "id": "R1", "description": "Pending follow-up migration.", "severity": "low", "likelihood": "low", "owner": "team", "mitigation": "Tracked for the next release.", "residual": "low" }
+    ]
+  },
+  "verificationEvidence": {
+    "tests": [
+      { "tier": "unit", "name": "feature core cases", "result": "pass", "detail": "9 cases", "evidence": "test run output" },
+      { "tier": "integration", "name": "feature wired end to end", "result": "pass", "evidence": "test run output" }
+    ],
+    "lint": "clean",
+    "typecheck": "clean",
+    "ci": "green",
+    "coveragePct": 92,
+    "skipped": []
+  },
+  "contractDiffs": {
+    "endpoints": [],
+    "events": [],
+    "schemas": [],
+    "compatibility": "backward-compatible",
+    "notes": "No public contract changed."
+  },
+  "rolloutRollback": {
+    "flags": ["feature.example (default off)"],
+    "migrations": [],
+    "observability": ["one counter on the feature entry point"],
+    "backoutCriteria": ["error rate on the feature path rises above the agreed line"]
+  },
+  "audienceNotes": [
+    {
+      "audience": "distinguished-engineer",
+      "notes": [
+        { "statement": "The boundary is held in code, not by convention.", "evidence": "src/feature.js:12" }
+      ]
+    },
+    {
+      "audience": "system-engineer",
+      "notes": [
+        { "statement": "No new service or data store; rollback is a flag flip.", "evidence": "rollout plan" }
+      ]
+    },
+    {
+      "audience": "tech-lead",
+      "notes": [
+        { "statement": "Ready to ship; one low follow-up tracked.", "evidence": "risk register" }
+      ]
+    }
+  ],
+  "openDecisions": {
+    "items": [
+      { "question": "Turn the flag on in this release or the next?", "blocking": false, "owner": "tech-lead", "recommendation": "Next release, after one soak day." }
+    ]
+  },
+  "customSections": [
+    {
+      "title": "Cost Note",
+      "lens": "tech-lead",
+      "items": [
+        { "statement": "Build and review cost stayed within the day estimate.", "evidence": "timeframe" }
+      ]
+    }
+  ],
+  "appendix": {
+    "fileRefs": ["src/feature.js", "test/feature.test.js"],
+    "commands": [
+      { "cmd": "npm test", "outcome": "ok", "evidence": "test run output" }
+    ],
+    "diagramSources": [
+      { "title": "Request flow", "mermaid": "flowchart LR\n  A[request] --> B[feature module] --> C[response]" }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "completion-gates",
+  "description": "Heavy evidence gates for FULL-tier turns: schema/DB, security, API/contract, operations — generalized, project-agnostic.",
+  "stackHint": ["sql", "api", "backend"],
+  "files": [],
+  "appendFormat": "gates.md",
+  "settingsPartial": null,
+  "deps": [],
+  "externalDeps": []
+}

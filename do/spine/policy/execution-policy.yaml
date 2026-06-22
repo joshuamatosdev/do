@@ -1,0 +1,649 @@
+---
+# Execution Policy
+# A domain-neutral intake triage + phase ladder + model selection + anti-patterns
+# + hard bans + handoff/persistence rules for AI-assisted engineering.
+#
+# Intended consumers:
+#   - The host loop as the authoritative answer to "which phase am I in"
+#   - Hooks for policy enforcement
+#   - Subagent dispatchers for correct routing
+#
+# Generalized from workspace engineering workflow. Specialist agents, bounded-context lanes,
+# and domain-specific gates are layered on by optional modules; the spine stays
+# stack-agnostic.
+
+version: 1
+source: do workspace engineering workflow
+generalized_for: do plugin
+
+host_loop:
+  model: opus
+  cache_window_ttl_seconds: 300
+  advisor_model: opus
+  rationale: >-
+    Routing decisions in phase 1 and lane selection in phase 2 require judgment;
+    mechanical work is delegated DOWN to Sonnet, never handled in the host loop.
+
+# =============================================================================
+# PHASES
+# =============================================================================
+phases:
+
+  # ---------------------------------------------------------------------------
+  - id: 0
+    name: baseline
+    description: Conditions of the loop; no explicit invocation needed.
+    model: opus
+    loaded_skills:
+      - id: 'superpowers:using-superpowers'
+        enforces: Skill priority and invocation discipline
+      - id: doctrine-one
+        enforces: Minimum sufficient architecture; effort fits the problem; verifiable behavior
+      - id: 'do:style'
+        enforces: The five moves in full — load for real engineering work where what must
+          never break is not obvious or there is a true design / data / lifecycle choice
+        when: real engineering work; small or named-invariant tasks stay on the short spine
+    standing_rules:
+      - Ask until high confidence on intent before acting.
+      - Never tell a subagent to stop if its brief is ambiguous; resolve the
+        ambiguity in the brief instead.
+      - Before declaring "can't / don't know / blocked", run the capability check
+        (knowledge / verification / delegation routes) — see capability-gate.md.
+        A refusal is valid only after the check comes back empty.
+      - When stuck, on a hard problem, or about to bet on a shaky assumption, consult an
+        external reasoner before betting — do:mon (browser, ChatGPT Pro) or the codex CLI.
+        Advisory, not authority; an advisor call runs on opus.
+
+  # ---------------------------------------------------------------------------
+  - id: 1
+    name: intake_triage
+    description: Single routing decision; picks ONE of six branches.
+    model: opus
+    decision_tree:
+      Q1:
+        prompt: Pure question (no artifact to produce)?
+        action: answer_directly
+        skill: null
+      Q2:
+        prompt: Trivial or mechanical task (single s/old/new/)?
+        action: dispatch_or_direct
+        route_options:
+          - tool: Agent
+            subagent_type: general-purpose
+            model: sonnet
+            when: enumerated file list and exact pattern
+          - tool: Edit
+            when: single-file in-place edit
+      Q3:
+        prompt: Intent ambiguous (low confidence on what the user wants)?
+        action: ask_user
+        route_options:
+          - tool: AskUserQuestion
+            constraint: at most 4 questions
+      Q4:
+        prompt: User articulated a plan/design AND wants it stress-tested?
+        action: invoke_skill
+        skill: 'do:plan-skeptic'
+        variants:
+          domain_docs_or_terminology_in_play: pair do:plan-skeptic with do:grounded-docs for cited grounding
+      Q5:
+        prompt: Goal stated, no design yet, design has branches?
+        action: invoke_skill
+        skill: 'superpowers:brainstorming'
+      Q6:
+        prompt: User has spec/PRD and wants execution?
+        action: pipeline
+        pipeline:
+          - 'superpowers:writing-plans'
+          - 'superpowers:executing-plans'
+
+    do_not_stress_test_triggers:
+      - User typed /plan or /execute
+      - User said just do X with verb plus object
+      - Task fits in one Edit call
+      - User is asking, not directing
+
+    do_stress_test_triggers:
+      - User asked to stress-test the plan or invoked /plan-skeptic
+      - Architectural change crosses 2 or more bounded contexts
+      - Touches a decision recorded as settled (an ADR or equivalent)
+      - Plan has 3 or more unresolved decision nodes with dependencies
+
+  # ---------------------------------------------------------------------------
+  - id: 2
+    name: routing
+    description: Pick the bounded-context lane before any tool selection.
+    model: opus
+    lane_map: []  # populated by the bounded-context-lanes module
+
+  # ---------------------------------------------------------------------------
+  - id: 3
+    name: planning
+    model: opus
+    triggers:
+      - Q5 from intake
+      - Q6 from intake
+    agents:
+      - id: 'do:engineer'
+        when: a change needs its engineering basis drawn up FIRST — need, invariants,
+          options, decision, way-back (move 1, "engineer before implementing")
+        note: read-only / design-only; it never writes code — that is do:distinguished-engineer
+    skills:
+      - id: 'superpowers:brainstorming'
+        when: only a goal exists and the design has branches
+      - id: 'superpowers:writing-plans'
+        when: a spec exists and needs bite-sized task-level detail for an executor
+      - id: 'do:adr'
+        when: a decision earns a durable record — a one-decision-per-file ADR catalog,
+          or a single comprehensive ADR + Implementation Spec (an execution contract)
+        pairs_with: 'do:adr-spec'   # workflow: team-driven ADR + spec assembly (YOLO)
+      # GAP: tracker-backed work (PRD -> issues -> triage) had no do-native or
+      # superpowers equivalent, so the external chain was removed rather than
+      # replaced. Re-add a do-native tracker skill here if/when one ships.
+
+  # ---------------------------------------------------------------------------
+  - id: 4
+    name: context_gathering
+    tools:
+      - need: known path
+        tool: Read
+        model: null
+      - need: known symbol
+        tool: Grep
+        model: null
+      - need: file pattern
+        tool: Glob
+        model: null
+      # The built-in Explore subagent runs on Haiku per Anthropic docs
+      # (code.claude.com/docs/en/sub-agents). Use it for any read/search volume
+      # that would otherwise pollute the main context.
+      - need: read or search volume that would pollute main context
+        tool: Agent
+        subagent_type: Explore
+        model: haiku
+        source: 'https://code.claude.com/docs/en/sub-agents'
+      - need: library/framework citation (current docs)
+        tool: Skill
+        skill: claude-api  # or a context7-backed docs lookup; library-docs agents are added by modules
+        model: sonnet
+      - need: official docs for any library / framework / API / CLI
+        tool: Skill
+        skill: 'plugin:context7:context7'  # or an MCP docs server; never answer libs from memory
+        model: sonnet
+      - need: a fact not in the repo or installed docs
+        tool: WebSearch  # or a project-shipped vector / grounded-docs index
+        model: sonnet
+      - need: cited project documentation index
+        tool: Skill
+        skill: 'do:grounded-docs'
+        model: sonnet
+      - need: architecture mapping
+        tool: Skill
+        skill: 'do:codebase-cartography'
+        model: opus
+    discipline:
+      - Never duplicate work an Explore subagent is doing.
+      - Delegate research; do not shadow it.
+      - Before saying you don't know, climb the knowledge route — repo, then project docs /
+        do-grounded-docs / vector, then MCP / context7 official docs, then WebSearch, then ask.
+      - Repo, docs, and web exhausted but still stuck on a hard call → consult an external
+        reasoner (do:mon) before asking the user; treat its answer as advisory, not authority.
+
+  # ---------------------------------------------------------------------------
+  - id: 5
+    name: execution
+    # Dispatch the fitting specialist before doing its job by hand. These ship with the plugin
+    # as do:<name>; more are added by modules. List installed agents if unsure — never assume none.
+    agent_dispatch:
+      - trigger: implement a feature / vertical slice / endpoint / migration (basis in hand)
+        agent: 'do:distinguished-engineer'
+        note: the production implementer (test-first, full gate). NOT do:engineer, which is
+          design-only — draw the basis with do:engineer (phase 3) first if none is in hand.
+      - trigger: draw up the engineering basis before any code (need / invariants / way-back)
+        agent: 'do:engineer'
+        note: read-only / design-only — move 1; see phase 3 planning
+      - trigger: author or rewrite ONE focused test (a single falsifiable behavior claim)
+        agent: 'do:test-engineer'
+      - trigger: test a whole bounded-context module (per-layer units + full-slice integration)
+        agent: 'do:test-engineer-module'
+      - trigger: runtime bug / failing test / stack trace to chase
+        agent: 'do:bug-runtime'
+      - trigger: static defect / code smell / risky-pattern hunt
+        agent: 'do:bug-static'
+      - trigger: review a diff or PR before commit
+        agent: 'do:review'
+      - trigger: write or update docs grounded in the code
+        agent: 'do:docs'
+      - trigger: security recon on an authorized target
+        agent: 'do:security-recon'
+      - trigger: group changes into commits / fix a failed commit
+        agent: 'do:commit'
+    security_lane:
+      # Authorized, LOCAL-ONLY targets. Pairs with the do:security-recon agent above.
+      - trigger: start or reorient an authorized bug-bounty session ("what do I do next")
+        skill: 'do:bb-methodology'
+      - trigger: need a specific payload / bypass table / "is this submittable" check
+        skill: 'do:security-arsenal'
+      - trigger: harden a system under adversarial red / blue pressure (looping live team)
+        skill: 'do:red-blue'
+        alt: 'do:red-blue-sweep'   # workflow: deterministic one-shot paired red/blue sweep
+    bugfix_discipline:
+      # A confirmed bug is fixed TEST-FIRST, at the user's altitude. The bug finders are
+      # read-only — they return a "Regression Test Brief"; they do not write the test or the fix.
+      sequence:
+        - find: 'do:bug-runtime | do:bug-static → returns a Regression Test Brief (user-level)'
+        - test: 'do:test-engineer (one behavior) | do:test-engineer-module (whole slice) → author the failing test at the highest user-facing tier that reproduces it (E2E preferred); confirm it RED'
+        - fix:  'do:distinguished-engineer (or the caller) → make it GREEN; never fix before the test is red'
+      rule: No fix lands before a failing user-level test reproduces the bug — red proves the bug, green proves the fix.
+    sub_phases:
+      b_mechanical_sonnet:
+        model: sonnet
+        dispatch_method: 'Agent(subagent_type=general-purpose, model=sonnet, ...)'
+        mandatory_for:
+          - null-check / requireNonNull wraps across enumerated files
+          - deprecated-call rewrites on a fixed list
+          - body-local extractions on fixed list
+          - ctor-cascade updates across enumerated test files
+          - import additions across N files
+          - identical paragraph appends across N docs
+          - param/return doc-comment fill-ins on fixed list
+        contract:
+          - explicit file list required
+          - exact pattern required
+
+      d_parallel_within_phase:
+        patterns:
+          - signal: 2 or more independent tasks, no shared state
+            skill: 'superpowers:dispatching-parallel-agents'
+          - signal: plan-defined parallel within phase
+            skill: 'superpowers:executing-plans'
+          - signal: same-session parallel non-plan
+            skill: 'superpowers:subagent-driven-development'
+
+  # ---------------------------------------------------------------------------
+  - id: 6
+    name: verification
+    always_required_for_completion: true
+    skills:
+      - 'superpowers:verification-before-completion'
+      - 'superpowers:test-driven-development'
+      - 'do:user-value-chain'   # code works but no one can find / run / trust / recover-from / operate it — close the last mile (move 5)
+      - run   # built-in: launch + drive the real app to observe the change
+    # Missing coverage? Author it via do:test-engineer (one behavior) or do:test-engineer-module (whole module) — see phase 5.
+    commands:
+      - verify   # /do:run verify
+    # Before "I can't verify": climb this ladder, don't stop at the first gap.
+    routes:
+      - unit / integration tests (the project's runner)
+      - project scripts (package.json / Makefile / gradlew)
+      - E2E / Playwright / browser automation (the `run` skill, a browser MCP)
+      - a local API or app probe (curl, the running app)
+      - logs; only then ask for a missing credential or env var, named exactly
+    rule: >-
+      It compiled is not verification. The test went green is. The page
+      rendered as expected is. Done must be earned. "Can't log in" is not a
+      verification dead-end — try E2E / Playwright / a local probe first.
+
+  # ---------------------------------------------------------------------------
+  - id: 7
+    name: review
+    dispatches:
+      - trigger: Pre-commit local diff or PR
+        command: code-review
+        alt_namespace: 'code-review:code-review'
+      - trigger: PR review
+        command: review
+      - trigger: High-stakes prod-path diff
+        skill: 'superpowers:requesting-code-review'
+        model: opus
+      - trigger: Two-pass adversarial review of a diff (generator finds, skeptic refutes)
+        skill: 'do:adversarial-review'   # workflow; only survivors are reported
+        model: opus
+      - trigger: Turn-level integrity doubt (false-inability, feature-loss, stub-only delivery)
+        skill: 'do:change-skeptic'   # in-session fallback when the codex integrity gate is down
+        model: opus
+      - trigger: Auth/data/security-sensitive change touched
+        command: security-review
+        alt: 'do:red-blue'   # adversarial red / blue hardening for a security-sensitive surface
+      - trigger: Received review feedback to act on
+        skill: 'superpowers:receiving-code-review'
+      - trigger: Major feature complete
+        skill: 'superpowers:requesting-code-review'
+
+  # ---------------------------------------------------------------------------
+  - id: 8
+    name: commit
+    dispatches:
+      - trigger: Before finalizing a commit — interrogate intent, scope creep, symptom-masking
+        skill: 'do:commit-skeptic'   # adversarial commit prosecutor; guilty until proven innocent
+        model: opus
+      - trigger: User asks to commit
+        tool: Bash
+        ritual: per project commit ritual (see CLAUDE.md)
+      - trigger: Commit hook fails (formatting/lint/static-analysis/build)
+        skill: 'superpowers:systematic-debugging'
+        model: opus
+        # the commit-doctor module auto-heals a FAILED commit (PostToolUse hook → dispatches do:commit)
+      - trigger: Recurring failure pattern
+        skill: 'superpowers:systematic-debugging'
+        model: opus
+      - trigger: Implementation complete; choose merge strategy
+        skill: 'superpowers:finishing-a-development-branch'
+    bans:
+      deny_list:
+        - 'git reset'
+        - 'git checkout'
+        - 'git restore'
+        - 'git switch'
+        - 'git rebase'
+        - 'git merge'
+        - 'git cherry-pick'
+        - 'git clean'
+        - 'git tag'
+        - 'git branch'
+        - 'git am'
+        - 'git init'
+        - 'git remote'
+        - 'git config'
+        - 'git notes'
+        - 'git format-patch'
+        - 'git bisect'
+        - 'git update-ref'
+        - 'git update-index'
+        - 'git worktree'
+        - 'git submodule'
+        - 'git sparse-checkout'
+        - 'git filter-branch'
+        - 'git filter-repo'
+        - 'git reflog expire'
+        - 'git gc'
+        - 'git prune'
+        - 'git repack'
+        - 'git commit --amend'
+        - 'revert'
+      meta_rule: >-
+        --no-verify and --amend are BANNED for agent-run commits. If a hook fails, investigate the
+        root cause and re-stage; do not skip hooks. The git-gate enforces this; the user may permit the bypass by setting DO_GIT_GATE_ALLOW_COMMIT_BYPASS=1.
+
+  # ---------------------------------------------------------------------------
+  - id: 9
+    name: handoff
+    dispatches:
+      - trigger: Deliver a polished report (delivery / change / security-audit / incident / release)
+        skill: 'do:report-writing'   # fills a JSON payload → renders one self-contained HTML file
+      - trigger: Session low on context with work in flight
+        skill: hp
+        output: handoff YAML written to OS temp dir (never to the workspace)
+      - trigger: Durable fact learned (user/feedback/project/reference)
+        tool: Write
+        skill: do-remember   # when the memory-discipline module is installed (do-memory-audit reviews saved memory)
+        ritual: record it in the project's memory file (one fact per file + a MEMORY.md index line)
+      - trigger: Deferred external work to monitor
+        tools:
+          - Monitor
+          - ScheduleWakeup
+      - trigger: Recurring task
+        commands:
+          - loop
+          - schedule
+
+# =============================================================================
+# MODEL SELECTION RUBRIC
+# =============================================================================
+model_selection:
+  binary_split: sonnet_or_opus
+  sonnet_when:
+    - s/old/new/ across a fixed enumerated list
+    - Pattern-based with no semantic decisions
+    - Read-only research or citation lookup
+    - Test-data factory generation against a known schema
+  opus_when:
+    - Architecture or lane routing
+    - Per-site judgment (annotation reason, contract phrasing)
+    - Novel-failure debugging
+    - Advisor calls
+    - Critique or red-team
+    - Anything in the planning family
+  haiku_policy:
+    status: implicit_via_builtin_explore
+    explanation: >-
+      The default split is binary Sonnet/Opus for workspace-defined agents and
+      for mechanical delegation. HOWEVER the built-in Explore subagent runs on
+      Haiku per Anthropic docs (code.claude.com/docs/en/sub-agents), so Haiku
+      IS present in the deployment surface even though the host loop never
+      selects it directly. Introducing Haiku for any OTHER agent requires
+      explicit user instruction.
+    source: 'https://code.claude.com/docs/en/sub-agents'
+
+  opusplan_alias:
+    status: documented_by_anthropic
+    behavior: Opus for plan-mode reasoning, Sonnet for execution
+    relevance: >-
+      Recorded for completeness. The default host loop runs pure Opus; opusplan
+      is opt-in.
+    source: 'https://code.claude.com/docs/en/sub-agents'
+
+# =============================================================================
+# ANTI-PATTERNS by phase
+# =============================================================================
+anti_patterns:
+  - phase: 1
+    pattern: Stress-testing a trivial task
+    why: Burns goodwill; over-engineers a trivial task (violates minimum sufficient architecture — effort must fit the problem)
+  - phase: 1
+    pattern: Skipping the skeptic gate when a settled decision is at stake
+    why: Re-litigating recorded decisions wastes effort and erodes trust
+  - phase: 1
+    pattern: Telling a subagent to stop if ambiguous
+    why: It will bail; resolve the ambiguity in the brief instead
+  - phase: 2
+    pattern: Wrong lane leading to the wrong supplement and wrong test approach
+    why: Different contexts carry different conventions; routing first prevents rework
+  - phase: 4
+    pattern: Re-running searches a subagent is already doing
+    why: Wastes context and tokens
+  - phase: 5
+    pattern: Mechanical edits on Opus
+    why: Wastes compute; delegate to Sonnet
+  - phase: 5
+    pattern: Judgment edits on Sonnet
+    why: Subtle wrong choices; no advisor recourse
+  - phase: 5
+    pattern: Worktree creation inside an agent
+    why: Isolation belongs to the orchestrator, not the worker; agents should not branch the workspace
+  - phase: 5
+    pattern: Dispatching do:engineer to write code
+    why: do:engineer is read-only / design-only (move 1); the implementer is do:distinguished-engineer
+  - phase: 5
+    pattern: Fixing a bug before a failing user-level test reproduces it
+    why: No red-first proof — the fix may target the wrong cause and leaves no regression guard; dispatch do:test-engineer (E2E-closest tier) first
+  - phase: 6
+    pattern: It compiled treated as done
+    why: Not verification
+  - phase: 6
+    pattern: Calling a feature done when no one can find, run, or recover from it
+    why: Last-mile gap; run do:user-value-chain — discovery / invocation / recovery / observability / docs (move 5)
+  - phase: 8
+    pattern: --no-verify to escape a failing hook
+    why: Banned; investigate the root cause instead
+  - phase: 8
+    pattern: git config or git push --force to a protected branch
+    why: Hard-banned by the deny-list
+  - phase: 9
+    pattern: Writing ephemeral state to the memory file
+    why: Bloats it; use a task tracker instead
+
+# =============================================================================
+# HARD BANS (enforced outside this YAML by hooks)
+# =============================================================================
+hard_bans:
+  destructive_git:
+    enforcement: PreToolUse hook (git-gate.sh) — OPT-IN git-gate module — plus settings deny patterns
+    hook: git-gate.sh
+    matcher: 'Bash|PowerShell'
+    see: 'phases[id=8].bans.deny_list'
+    meta_rule: >-
+      --no-verify is BANNED. If a hook fails, investigate the root cause and
+      re-stage; do not skip hooks.
+  no_skipping_hooks:
+    rule: Never pass --no-verify or otherwise bypass a failing hook.
+    enforcement: git-gate.sh
+
+# =============================================================================
+# ENFORCEMENT SURFACE (the hooks that gate the loop)
+# =============================================================================
+# Wired in .claude-plugin/plugin.json when do is installed as a plugin, or merged into
+# .claude/settings.json by `/do:run setup` (spine settings.partial.json + per-module partials).
+# Spine hooks are always on; `module:` hooks are present only when that module is installed.
+# This catalogs ENFORCEMENT, not the git deny-list payload — git subcommands live in phases[id=8].bans.
+enforcement_surface:
+  blocking_gates:   # can BLOCK a tool call or a turn
+    - hook: git-gate.sh
+      event: PreToolUse
+      matcher: 'Bash|PowerShell'
+      module: git-gate   # OPT-IN — enforces only where git-gate is recorded in manifest.modules
+      enforces: destructive / history-rewriting git is denied (see hard_bans.destructive_git)
+    - hook: block-stub-write.sh
+      event: PreToolUse
+      matcher: 'Edit|Write|MultiEdit'
+      enforces: blocks writes containing stub / placeholder sentinels (unfinished-work comment markers and language placeholder macros)
+    - hook: docs-compliance-check.sh
+      event: PreToolUse
+      matcher: 'Edit|Write|MultiEdit'
+      enforces: first governed edit per session is blocked until grounded-docs / spec compliance is verified (@docscheck)
+    - hook: validate-response-format.sh
+      event: Stop
+      enforces: the turn carries its tier's required section headers (TRIVIAL / LITE / REPORT / FULL)
+    - hook: validate-continuation.sh
+      event: Stop
+      enforces: no hand-back of actionable work, no passive close, no claimed blocker, no end-on-question (act-and-finish)
+    - hook: codex-integrity-review.sh + codex-adversarial-review.sh
+      event: Stop
+      module: codex-integrity
+      enforces: end-of-turn Codex integrity + adversarial review; blocks on a DECISION:BLOCK finding
+      fail_open: degrades to a do:change-skeptic advisory when the codex CLI is absent / errors / times out
+  advisory_hooks:   # run but do not block
+    - hook: protect-user-work.sh
+      event: PreToolUse
+      matcher: 'Edit|Write|MultiEdit'
+      note: advisory guard on user-owned files (non-blocking MVP)
+    - hook: commit-doctor.sh
+      event: PostToolUse
+      matcher: Bash
+      module: commit-doctor
+      note: on a FAILED git commit, dispatches do:commit to heal it (never --no-verify); 3 retries then incident log
+    - hook: codex-later-stop.sh
+      event: Stop
+      module: codex-later
+      note: acts on [LATER] parked items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_LATER_OFF=1
+    - hook: oppihtnias-activate.js
+      event: SessionStart
+      module: oppihtnias
+      note: seeds the per-session state twin (goal / acceptance criteria / tasks); advisory, nothing blocks
+  context_injectors:   # load standing rules into the session, do not block
+    - hook: load-do-one.sh            # SessionStart — the five engineering moves
+    - hook: load-response-format.sh   # SessionStart — the tiered response-format spec
+    - hook: load-capability-gate.sh   # SessionStart — the capability check (3 routes before "I can't")
+    - hook: inject-response-format.sh # UserPromptSubmit — re-states tier floors + act-and-finish each turn (survives compaction)
+    - hook: do-compress-activate.js + do-compress-tracker.js   # do:compress session mode (SessionStart / UserPromptSubmit)
+    - hook: do-mon-activate.js + do-mon-tracker.js             # do:mon session mode (SessionStart / UserPromptSubmit)
+
+# =============================================================================
+# INTAKE THESIS (the framing behind phase 1)
+# =============================================================================
+intake_thesis: >-
+  The plan-skeptic gate belongs at the front but as ONE branch of a triage gate.
+  The gate's job is to route fast and only invoke heavy ritual when work needs
+  it. plan-skeptic fires when there is a design to attack. brainstorming when
+  there is only a goal. AskUserQuestion when intent itself is unclear. The gate
+  stays silent for trivial work and pure questions. The cost of stress-testing
+  when it is wrong is the same as skipping it when it is right -- that is why the
+  gate exists.
+
+# =============================================================================
+# OUT-OF-PHASE SKILLS (session modes / entrypoints) — not part of the phase ladder
+# =============================================================================
+out_of_phase_skills:
+  - id: 'do:compress'
+    kind: session output mode
+    note: sticky reply-compression at a chosen level until the session ends; orthogonal to phases
+  - id: 'do:mon'
+    kind: session mode (advisory reasoner)
+    note: sticky browser-driven consult of ChatGPT Pro for hard calls; /do mon on|off|status; advisory, not authority
+  - id: 'do:setup'
+    kind: workflow entrypoint
+    note: installer / dashboard / phase router — /do:run <setup|status|add|update|fix|execute|review|verify|handoff>
+  - id: 'do:style'
+    kind: doctrine skill
+    note: the full five-moves engineering style; loaded in phase 0 baseline for real engineering work
+
+# =============================================================================
+# MODULE & WORKFLOW SURFACE (layered on by optional modules / the Workflow tool)
+# =============================================================================
+# The spine stays stack- and module-agnostic; these extend it when installed or invoked.
+module_and_workflow_surface:
+  # Optional modules layered on by `/do:run setup --modules=...`, or always-on when do is installed
+  # as a plugin (.claude-plugin/plugin.json). Each declares its install surface in
+  # do/modules/<name>/module.json; the hooks they add are catalogued in enforcement_surface above.
+  modules:
+    # -- routing & parallel build --
+    - id: 'do-route'
+      module: task-router
+      when: a task exists but the runner is not chosen ("route this", "which agent", "fan out")
+      installs: do-route skill (depends on agent-team)
+      phase: 1-2
+    - id: 'do-team'
+      module: agent-team
+      when: BUILD a feature / change / module with several engineering specialists in parallel
+      installs: do-team skill + findings tracker; sets the experimental agent-teams flag
+      phase: 5
+    # -- integrity / commit gates (add Stop / PostToolUse hooks) --
+    - id: codex-integrity
+      module: codex-integrity
+      when: every non-trivial turn — end-of-turn Codex adversarial integrity review (ON by default)
+      installs: Stop hooks (codex-integrity-review.sh, codex-adversarial-review.sh); needs the codex CLI
+      fail_open: degrades to a do:change-skeptic advisory if codex is absent/errors; toggle via /do:run codex off
+      egress: sends secret-scrubbed turn text to an external LLM (codex / OpenAI); codex runs read-only
+      phase: 7
+    - id: codex-later
+      module: codex-later
+      when: a turn left [LATER] parked items, OR changed code governed by a registered ADR / grounded-docs spec
+      installs: Stop hook (codex-later-stop.sh); needs jq + codex
+      does: acts on in-scope [LATER] items; aligns changed code to its ADR/spec (@docscheck); fail-open
+      phase: 9
+    - id: commit-doctor
+      module: commit-doctor
+      when: a `git commit` fails — auto-heal it (classify / fix / re-stage / retry, never --no-verify)
+      installs: PostToolUse(Bash) hook (commit-doctor.sh) that dispatches do:commit; needs jq; 3 retries then incident log
+      phase: 8
+    - id: git-gate
+      module: git-gate
+      when: you want destructive / history-rewriting git blocked (OPT-IN; off by default)
+      installs: PreToolUse(Bash|PowerShell) hook (git-gate.sh + git-gate.cjs); plugin-declared, self-gates on git-gate in manifest.modules; needs node
+      phase: 8
+    - id: completion-gates
+      module: completion-gates
+      when: FULL-tier turns touching schema/DB, security, API/contract, or operations
+      installs: heavy evidence gates appended to RESPONSE-FORMAT.md (gates.md)
+      phase: 6
+    # -- session state & memory (advisory) --
+    - id: memory-discipline
+      module: memory-discipline
+      when: a durable fact is learned that should persist across sessions
+      installs: MEMORY.md one-fact-per-file ritual + do-remember and do-memory-audit skills
+      phase: 9
+    - id: oppihtnias
+      module: oppihtnias
+      when: baseline — a per-session JSON twin (goal / acceptance criteria / tasks) of the response format
+      installs: SessionStart hook (oppihtnias-activate.js) + Oppihtsugatnias.ts; advisory, nothing blocks
+      phase: 0
+  workflows:   # invoked via the Workflow tool, not the Skill tool
+    - id: 'do:adr-spec'
+      pairs_with_phase: 3
+      note: team-driven ADR + Implementation Spec assembly (YOLO)
+    - id: 'do:adversarial-review'
+      pairs_with_phase: 7
+      note: generator finds issues, skeptic refutes; only survivors reported
+    - id: 'do:red-blue-sweep'
+      pairs_with_phase: 7
+      note: deterministic one-shot paired red / blue security sweep (authorized, local-only)

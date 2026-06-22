@@ -1,0 +1,16 @@
+{
+  "name": "agent-team",
+  "description": "Run do's engineering agents as a Claude Code agent team (do-team): decompose a build, assign engineering specialists, integrate, gate, and ship; track deferred / follow-up work to a neutral findings.json rendered to a local Markdown tracker (default) or GitHub. Requires the experimental agent-teams flag (set on install).",
+  "stackHint": [],
+  "files": [
+    ["do-team/SKILL.md", ".claude/skills/do-team/SKILL.md"],
+    ["do-team/scripts/write-local-findings.js", ".claude/skills/do-team/scripts/write-local-findings.js"],
+    ["do-team/scripts/create-gh-issues-from-findings.sh", ".claude/skills/do-team/scripts/create-gh-issues-from-findings.sh"],
+    ["do-team/assets/issue.template.md", ".claude/skills/do-team/assets/issue.template.md"],
+    ["do-team/assets/index.template.md", ".claude/skills/do-team/assets/index.template.md"]
+  ],
+  "appendFormat": "format-note.md",
+  "settingsPartial": "settings.partial.json",
+  "deps": [],
+  "externalDeps": []
+}

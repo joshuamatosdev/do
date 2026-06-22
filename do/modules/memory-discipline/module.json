@@ -1,0 +1,14 @@
+{
+  "name": "memory-discipline",
+  "description": "Persistent file-based memory: a MEMORY.md index + one-fact-per-file ritual, a do-remember skill to write facts, and a do-memory-audit skill to review saved memory for non-neutral language.",
+  "stackHint": [],
+  "files": [
+    ["MEMORY.template.md", ".claude/do/MEMORY.template.md"],
+    ["skills/do-remember/SKILL.md", ".claude/skills/do-remember/SKILL.md"],
+    ["skills/do-memory-audit/SKILL.md", ".claude/skills/do-memory-audit/SKILL.md"]
+  ],
+  "appendFormat": "format-note.md",
+  "settingsPartial": null,
+  "deps": [],
+  "externalDeps": []
+}

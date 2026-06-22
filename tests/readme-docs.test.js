@@ -1,0 +1,84 @@
+// Regression tests for README.md docs-accuracy (public-readiness audit).
+// Each test would FAIL on the old README and PASS on the corrected one.
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { readFileSync } = require("node:fs");
+const { join } = require("node:path");
+
+const README = readFileSync(join(__dirname, "..", "README.md"), "utf8");
+
+// (1) protect-user-work.sh must be labeled a placeholder, not advertised as guarding work.
+test("protect-user-work.sh is labeled reserved/no-op, not an active guard", () => {
+  // Old text advertised it as actively guarding uncommitted work.
+  assert.ok(
+    !README.includes("(guard uncommitted work)"),
+    'README must not advertise protect-user-work.sh as actively guarding uncommitted work'
+  );
+  // New text must describe it as a placeholder.
+  assert.ok(
+    README.includes("reserved / no-op placeholder"),
+    'README must label protect-user-work.sh as a reserved / no-op placeholder'
+  );
+});
+
+// (2) Runtime section must not claim zero runtime dependencies without qualifying the hook layer.
+test("runtime section discloses bash/jq/PowerShell hook requirements", () => {
+  // Old text: "Runtime: Node.js, zero runtime dependencies." — misleading.
+  assert.ok(
+    !README.match(/Runtime.*zero runtime dependencies/),
+    'README must not claim unconditional zero runtime dependencies'
+  );
+  // New text must name bash, jq, and PowerShell.
+  assert.ok(README.includes("bash"), "README must mention bash as a hook requirement");
+  assert.ok(README.includes("jq"), "README must mention jq as a hook requirement");
+  assert.ok(README.includes("PowerShell"), "README must mention PowerShell as a hook requirement");
+  // And must still confirm no npm deps for Node core.
+  assert.ok(
+    README.match(/zero npm dependencies/),
+    "README must confirm zero npm dependencies for Node core"
+  );
+});
+
+// (3) codex-integrity module description must disclose external LLM data flow.
+test("codex-integrity row discloses that assistant turn text is sent to an external LLM", () => {
+  // Find the codex-integrity table row.
+  const lines = README.split("\n");
+  const row = lines.find((l) => l.includes("`codex-integrity`"));
+  assert.ok(row, "codex-integrity row must exist in the modules table");
+  // Old description said nothing about external LLM or data transmission.
+  // New description must mention external LLM and read-only.
+  assert.ok(
+    row.includes("external") && row.includes("LLM"),
+    "codex-integrity row must disclose that an external LLM is called"
+  );
+  assert.ok(
+    row.includes("read-only"),
+    "codex-integrity row must disclose read-only file access"
+  );
+  // Must mention that turn text is sent (scrubbed).
+  assert.ok(
+    row.includes("scrubbed") || row.includes("turn text"),
+    "codex-integrity row must disclose that (scrubbed) turn text is sent"
+  );
+});
+
+// (4) License section must exist with Apache-2.0 and copyright notice.
+test("README has a License section with Apache-2.0 and copyright", () => {
+  assert.ok(
+    README.includes("## License"),
+    'README must contain a "## License" section'
+  );
+  assert.ok(
+    README.includes("Apache-2.0"),
+    "README License section must name Apache-2.0"
+  );
+  assert.ok(
+    README.includes("Copyright 2026 Joshua Matos"),
+    "README License section must include copyright notice"
+  );
+  assert.ok(
+    README.includes("LICENSE"),
+    "README License section must reference the LICENSE file"
+  );
+});
