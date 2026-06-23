@@ -8,13 +8,15 @@
 
 Any turn that is a question, plan, status, debug, implementation, handoff, or completion. Match ceremony to the turn — write to your tier's floor. If the tier is unclear, satisfy the next floor and keep it concise and evidence-based (the gate fails open, so under-writing a heavy turn is the only miss it can't catch).
 
+**How the gate acts on a miss:** it **blocks** (re-prompts) only when the turn has proven on-transcript production substance — a high-stakes edit, or a production-code file edited this turn — because that turn visibly owes a structured account. A turn judged substantive only by text length (no production edit) gets a **non-blocking advisory** instead. The gate blocks what it can prove and only nudges what it infers, so a valid-but-differently-shaped turn is never blocked.
+
 ## Tiers
 
-Tier is auto-classified from what THIS turn edited (transcript `tool_use`) + the turn's whole assistant-text length (every text block since the last human prompt, not just the closing message). `.claude/`, `docs/`, and `*.md` are safe surfaces — they never raise the tier. A turn that dispatched a subagent (its edits live off-transcript) is never exempt — it floors at LITE.
+Tier is auto-classified from what THIS turn edited (transcript `tool_use`) + the turn's whole assistant-text length (every text block since the last human prompt, not just the closing message). `.claude/`, `docs/`, and `*.md` are safe surfaces — they never raise the tier. A subagent dispatch does **not** raise the tier — the dispatched agent's edits and commits are its own deliverable and audit trail, so the parent ack is judged on its own visible substance only.
 
 Tier | Trigger | Required floor
 ---|---|---
-**TRIVIAL** | turn text < 800 chars, no high-stakes edit, no subagent dispatch | exempt — no structure
+**TRIVIAL** | turn text < 800 chars, no high-stakes edit | exempt — no structure
 **LITE** | config/hook/tooling/docs/one-file/mechanical edit; status; analysis; Q&A (~800–2500 chars of turn text, no high-stakes surface) | `## Goal` · `## Immediate Actions` · `## Remaining Steps` (+ conditional **Bugs:** / **Gaps:** / **Inconsistencies:** when merited)
 **REPORT** | long major turn (~2500+ chars of turn text), no high-stakes code surface (audit, write-up, multi-part status) | LITE floor **+** `## Proof`
 **FULL** | edits a high-stakes surface (schema/migration files, auth/security config, or ≥ 3 production-code files) | REPORT floor **+** `## Feature Completion Chain` **+** `## Completion Checklist` (both commitments)
@@ -35,7 +37,7 @@ Tier | Trigger | Required floor
 
 1. **Ground every claim in facts from the code** — cite file:line, command output, or file. No recall-only claims. (At REPORT/FULL this is the `## Proof` section.)
 
-2. **Codex** — if the `codex-integrity` module is installed, the Stop `codex-integrity-review` hook **as shipped** is advisory: when `codex` is on PATH it surfaces a reminder to run a Codex integrity review on integrity-watchlist turns (false-inability / feature-loss / degradation); the shipped hook does not block. (An installer MAY harden it to fail closed — e.g. TTX's `.claude/hooks/codex-integrity-review-stop.sh` emits `decision:block` by design; "advisory" describes the shipped default, not a guarantee about every deployment.) Do not also fire the in-response `codex` skill on routine or turns you can verify yourself (config/hook/doc/mechanical, anything a grep/read/command you already ran proves) — that doubles Codex cost. Fire `codex` only for genuine judgment calls: a claim you can not verify yourself, a risky/unclear design decision, or a second opinion before relying on a conclusion. When a gate (or Codex itself) fails CLOSED and blocks an action, fire `codex --decide` for a go/no-go.
+2. **Codex** — if `codex-integrity` is installed, the unified Stop hook `codex-stop.sh` runs the Codex integrity gate. Use the in-response `codex` skill only for genuine judgment calls you cannot verify locally, or when a closed gate requires `codex --decide`; routine grep/read/command-verifiable turns do not need a second Codex call.
 
 ---
 
@@ -144,7 +146,7 @@ Edge case test | |
 
 ## Stop-Work Checklist (confirm before ending a turn)
 
-- The request is met and the discovered frontier is drained, or the only thing left is a `- [ ] [USER]` decision (irreversible / outward-facing) — not a blocker you can push through or escalate, and not beneath-attention trivia you should just decide yourself. A stop with open non-`[USER]` work or "awaiting your direction" is rejected by the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
+- Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [USER]` irreversible / outward-facing decisions. Do not tag safe tool work, pushable blockers, or beneath-attention trivia as `[USER]`. Open non-`[USER]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
 
 - Frontier drained — everything required or discovered-safe was attempted this turn, or surfaced under Bugs / Gaps / Inconsistencies.
 

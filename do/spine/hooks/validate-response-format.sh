@@ -29,17 +29,17 @@ transcript=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/nul
 
 # --- Classify the turn (tier + signals) --------------------------------------------------
 # Shared logic -- assistant-text extraction, edit/dispatch signals, and the EXEMPT/REPORT
-# thresholds -- lives in lib/turn-tier.sh so THIS gate and codex-adversarial-review.sh stay
+# thresholds -- lives in lib/turn-tier.sh so THIS gate and codex-stop.sh stay
 # in lock-step (was duplicated jq). classify_turn sets TURN_TEXT/TURN_N/TURN_HEAVY/
 # TURN_DISPATCHED/TURN_TIER; it fails open (empty text, TRIVIAL) on any jq/parse error.
 . "$(dirname "$0")/lib/turn-tier.sh"
 classify_turn "$transcript"
-text="$TURN_TEXT"; n="$TURN_N"; heavy="$TURN_HEAVY"; dispatched="$TURN_DISPATCHED"
+text="$TURN_TEXT"; n="$TURN_N"; heavy="$TURN_HEAVY"; prod="$TURN_PROD"
 
 # Nothing to validate (turn ended without text) -> fail-open.
 [ "$n" -eq 0 ] && exit 0
 
-# TRIVIAL = short turn, no high-stakes edit, no subagent dispatch -> exempt (no floor).
+# TRIVIAL = short turn, no high-stakes edit -> exempt (no floor). Dispatch is not a tier signal.
 tier="$TURN_TIER"
 [ "$tier" = "TRIVIAL" ] && exit 0
 
@@ -73,7 +73,20 @@ EOF
 # Conforming -> allow.
 [ -z "$missing" ] && exit 0
 
-reason="Response-format floor not met. This turn was classified ${tier} (turn text ${n} chars$( [ "$heavy" = "1" ] && printf '%s' "; high-stakes schema/security or multi-file production edit this turn" )$( [ "$dispatched" = "1" ] && [ "$heavy" != "1" ] && printf '%s' "; subagent dispatched -> off-transcript work")). It is missing required element(s): ${missing}. Re-emit clearing ${floor_desc}. Canonical spec: .claude/RESPONSE-FORMAT.md. Ground every claim in codebase facts (file:line, command output)."
+# Evidence-gated enforcement. BLOCK only when this turn has proven on-transcript PRODUCTION
+# substance -- a high-stakes edit (schema/security, or >=3 files) or >=1 production-code file:
+# the turn visibly did production work and owes a structured account. When the turn is
+# "substantive" only by INFERENCE (text length, no production edit on this transcript), the
+# classification is a guess, not ground truth -> ADVISE, never block. A header-string gate
+# can't recognise a valid-but-differently-shaped turn, so it blocks only what it can prove and
+# stays silent-but-helpful on what it infers. (Advisory shape: validate-capability-preservation.sh.)
+reason="Response-format floor not met. This turn was classified ${tier} (turn text ${n} chars$( [ "$heavy" = "1" ] && printf '%s' "; high-stakes schema/security or multi-file production edit this turn" )). It is missing required element(s): ${missing}. Re-emit clearing ${floor_desc}. Canonical spec: .claude/RESPONSE-FORMAT.md. Ground every claim in codebase facts (file:line, command output)."
 
-jq -nc --arg r "$reason" '{decision:"block", reason:$r}'
+if [ "$heavy" = "1" ] || [ "${prod:-0}" -gt 0 ]; then
+  jq -nc --arg r "$reason" '{decision:"block", reason:$r}'
+  exit 0
+fi
+
+# Substantive only by inference (text length, no production edit) -> non-blocking advisory.
+echo "do response-format (ADVISORY): ${reason}" >&2
 exit 0

@@ -10,10 +10,13 @@
 #     TURN_TIER        TRIVIAL | LITE | REPORT | FULL
 #
 # This is the single source of the tier logic that validate-response-format.sh and
-# codex-adversarial-review.sh both depend on (was duplicated jq + thresholds). Requires jq;
+# codex-stop.sh both depend on (was duplicated jq + thresholds). Requires jq;
 # on any failure it leaves TURN_TEXT empty and TURN_TIER=TRIVIAL so callers fail open.
 #
-# A turn that dispatched a subagent did work off this transcript -> never TRIVIAL (floors at LITE).
+# A subagent dispatch is NOT a tier signal: the dispatched agent's edits/commits are its own
+# deliverable + audit trail, and the parent ack has no on-transcript substance to format --
+# gating the parent on dispatch fired on valid background-dispatch acks (false positive). Tier
+# is judged on the parent's OWN visible substance (text length + on-transcript edits) only.
 # Benign surfaces (.claude/, docs/, *.md) never raise the tier. schema/security edit or >=3
 # production files -> FULL. Thresholds match the original inline logic exactly.
 
@@ -100,8 +103,9 @@ EOF
   if [ "$TURN_HEAVY" = "1" ]; then
     TURN_TIER="FULL"
   elif [ "$TURN_N" -lt "$TURN_EXEMPT_MAX" ]; then
-    # Short turn: a subagent dispatch did off-transcript work -> floor at LITE; else exempt.
-    if [ "$TURN_DISPATCHED" = "1" ]; then TURN_TIER="LITE"; else TURN_TIER="TRIVIAL"; fi
+    # Short turn, no high-stakes edit -> TRIVIAL (exempt). Dispatch does NOT raise this:
+    # the parent ack carries no on-transcript substance, so there is nothing to format.
+    TURN_TIER="TRIVIAL"
   elif [ "$TURN_N" -lt "$TURN_REPORT_MIN" ]; then
     TURN_TIER="LITE"
   else

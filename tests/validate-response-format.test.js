@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { execFileSync } = require("node:child_process");
+const { execFileSync, spawnSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
@@ -8,10 +8,12 @@ const { tmpdir } = require("node:os");
 // Stop hook validate-response-format.sh: classifies the turn (TRIVIAL/LITE/REPORT/FULL) and
 // enforces the matching GATE-REQUIRED floor from .claude/RESPONSE-FORMAT.md. It prints a
 // {decision:"block",reason} JSON object on stdout to block, or nothing to allow; it always
-// exits 0. Invariant under test (the 2026-06-18 fix): tier + floor are judged over the WHOLE
-// turn's assistant text (every text block since the last human prompt), not just the closing
-// message -- so a turn that delivered structure early and closed with a short summary passes,
-// and a turn that dispatched a subagent is never exempted on its short parent text alone.
+// exits 0. Invariants under test: (1) tier + floor are judged over the WHOLE turn's assistant
+// text (every text block since the last human prompt), not just the closing message -- so a
+// turn that delivered structure early and closed with a short summary passes; (2) the gate is
+// evidence-gated -- it BLOCKS only a turn with proven on-transcript production substance, and
+// only ADVISES (non-blocking, on stderr) a turn judged substantive by text length alone;
+// (3) a subagent dispatch is not a substance signal -- it never floors the parent ack.
 // Faithful test -- actually executes the bash hook; skipped where bash or jq is unavailable.
 function has(bin) { try { execFileSync("bash", ["-c", `command -v ${bin}`], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : (!has("jq") ? "jq unavailable" : false);
@@ -42,12 +44,16 @@ function transcript(dir, entries) {
   return fwd(f);
 }
 
-// Run the hook; return true if it BLOCKED (printed decision:block), false if it ALLOWED.
-function blocked(dir, tf, stopActive = false) {
+// Run the hook; capture stdout (block JSON) and stderr (advisory note). The hook always exits 0.
+function run(dir, tf, stopActive = false) {
   const input = JSON.stringify({ transcript_path: tf, stop_hook_active: stopActive });
-  const out = execFileSync("bash", [HOOK], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(dir) } }).toString();
-  return out.includes('"block"');
+  const r = spawnSync("bash", [HOOK], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(dir) }, encoding: "utf8" });
+  return { stdout: r.stdout || "", stderr: r.stderr || "" };
 }
+// BLOCKED = a decision:block JSON on stdout (re-prompts). ADVISED = a non-blocking advisory on
+// stderr. Mutually exclusive by construction: a turn is one, the other, or neither (exempt/conforming).
+function blocked(dir, tf, stopActive = false) { return run(dir, tf, stopActive).stdout.includes('"block"'); }
+function advised(dir, tf, stopActive = false) { return run(dir, tf, stopActive).stderr.includes("ADVISORY"); }
 
 const LITE_FLOOR =
   "## Goal\nx\n## Immediate Actions\n1. y\n## Remaining Steps\n- [x] none ";
@@ -63,23 +69,35 @@ test("the fix: structure delivered EARLY + a short closer is ALLOWED", { skip: S
   assert.equal(blocked(d, tf), false, "turn-wide text contains the floor; must allow");
 });
 
-test("no structure anywhere, mid-length -> BLOCK (LITE)", { skip: SKIP }, () => {
+test("no structure, mid-length, NO production edit -> ADVISE not block", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
     { role: "assistant", text: "just prose, no headers at all. " + PAD },
   ]);
-  assert.equal(blocked(d, tf), true);
+  assert.equal(blocked(d, tf), false, "text-only: substantive by inference only -> must not block");
+  assert.equal(advised(d, tf), true, "text-only miss -> non-blocking advisory");
 });
 
-test("subagent dispatch + short header-less text -> BLOCK (not exempted)", { skip: SKIP }, () => {
+test("production edit + mid-length missing structure -> BLOCK (proven substance)", { skip: SKIP }, () => {
+  const d = project();
+  const tf = transcript(d, [
+    { role: "user", text: "change the parser" },
+    { role: "assistant", tool: "Edit", input: { file_path: "src/parser.ts" } },
+    { role: "assistant", text: "changed it. " + PAD }, // LITE band, no headers, but a real .ts edit
+  ]);
+  assert.equal(blocked(d, tf), true, "on-transcript production edit owes a structured account");
+});
+
+test("subagent dispatch + short text -> ALLOW (dispatch is not a substance signal)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "ship it via an agent" },
     { role: "assistant", tool: "Agent", input: { description: "ship" } },
-    { role: "assistant", text: "Done, the agent shipped it." }, // 27 chars -> would be exempt without the dispatch floor
+    { role: "assistant", text: "Done, the agent shipped it." }, // 27 chars, no on-transcript edit -> TRIVIAL/exempt
   ]);
-  assert.equal(blocked(d, tf), true);
+  assert.equal(blocked(d, tf), false, "dispatch no longer floors the parent ack");
+  assert.equal(advised(d, tf), false, "short exempt turn -> not even advised");
 });
 
 test("genuinely trivial short turn, no dispatch -> ALLOW (exempt)", { skip: SKIP }, () => {
