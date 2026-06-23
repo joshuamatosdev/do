@@ -14,8 +14,9 @@
  *   - ONE task topology: flat `parentId` hierarchy + `dependsOn` edges (no recursive
  *     `children`, no second graph in `execution.phases`).
  *
- * The agent keeps `.claude/state/oppihtnias/<session-id>.json` conforming to this.
- * Recreatable from `provenance` + `core`.
+ * The agent keeps a typed `.ts` model at `<os-temp>/claude/oppihtnias/<session-id>.<created-date>.ts`
+ * conforming to this (a copy of this schema sits beside it, so the model imports `./Oppihtsugatnias`
+ * and type-checks standalone). Recreatable from `provenance` + `core`.
  */
 
 // ── nominal brand: one shared unique symbol, REQUIRED ─────────────────────────
