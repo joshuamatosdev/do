@@ -36,17 +36,17 @@ Both modes build the **same** prompt: the context (the verbatim question if one 
 
 Claude does **not** hand-write the Codex prompt. Hand-synthesis WAS the bug: Claude — the reasoner being checked — reliably (a) led the witness and (b) under-included context. Both are designed out by forwarding the **actual conversation transcript** of the current session as context (the transcript is neutral by construction). It is *not* the whole chat: tool-result bodies are elided and only the last ~80KB of text is sent — but the most-recent user message is forwarded separately and untruncated, so the live question always survives.
 
-Script: `~/.claude/skills/codex/codex.sh`
+Script (bundled in this plugin): `${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh`
 
 ```bash
 # consult, explicit question
-"$HOME/.claude/skills/codex/codex.sh" "<the user's question, copied verbatim>"
+"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" "<the user's question, copied verbatim>"
 
 # consult, no explicit question -> Codex infers the open question from the transcript
-"$HOME/.claude/skills/codex/codex.sh"
+"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh"
 
 # decision mode -> Codex gives its own go/no-go on the merits (free-form, no imposed format)
-"$HOME/.claude/skills/codex/codex.sh" --decide "<the pending go/no-go matter, verbatim>"
+"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" --decide "<the pending go/no-go matter, verbatim>"
 ```
 
 What the script does for you (so you don't re-do or second-guess it):
