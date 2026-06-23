@@ -75,6 +75,7 @@ Loaded on demand. Invoke by name or `/do:<name>`.
 | `compress` | Compress every reply into plain, common words at a chosen level; sticky until the session ends. |
 | `setup` | The `/do:run` installer, dashboard, and phase router. |
 | `mon` | Consult an external reasoner (ChatGPT) by driving your logged-in browser. Advisory, Claude will go back and forth to find a solution that works. |
+| `codex` | Forward the live session to Codex (gpt-5.5, xhigh) for a second opinion; edits the repo by default — set `ASK_CODEX_ALLOW_EDITS=0` for advise-only. Needs the `codex` CLI. |
 | `adr` | Write architecture decision records — one comprehensive spec, or a catalog of one-per-file ADRs. |
 | `plan-skeptic` | Adversarially review a plan before any code; returns Approve or Challenge. |
 | `commit-skeptic` | Adversarially review a staged commit before it lands; returns Clear or Hold. |
