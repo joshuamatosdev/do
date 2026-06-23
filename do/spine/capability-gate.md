@@ -27,3 +27,14 @@ if you are unsure what is on hand — never assume the set is empty.
 
 Say so plainly: "Checked: \<routes tried>; none can do X because \<reason>; I need \<Y> from you."
 Never present an unchecked guess as an inability. Full routing per phase: `execution-policy.yaml`.
+
+## A missing source is an untried route, not a dead end (DO-CAP-001)
+
+A missing projection, query field, metric, schema element, or read-model computation is an **untried
+implementation route — not an empty capability**. Do not resolve a gap by returning a sentinel
+(`UNKNOWN` / `N/A` / null / empty) in a value-producing path and calling it done — that is the same
+refusal this gate exists to stop, just wearing a value's clothes. Build the missing source and
+compute the real value; or, if that is genuinely out of reach, keep the honest absence but mark the
+delivery `CAPABILITY STATUS: NOT COMPLETE` with a grounded gap record. Never present a degraded
+sentinel as a finished fix. The `validate-capability-preservation.sh` Stop hook warns on this
+(advisory).

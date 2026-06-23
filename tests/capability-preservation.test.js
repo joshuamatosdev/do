@@ -7,6 +7,18 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { evaluate, scanDiff } = require("../lib/capability-preservation");
+const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+const LIB = path.join(__dirname, "..", "lib", "capability-preservation.js");
+function writeTmp(name, content) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "docap-"));
+  const p = path.join(dir, name);
+  fs.writeFileSync(p, content);
+  return p;
+}
 
 // Build a minimal unified diff that adds `lines` to `file`.
 function mkDiff(file, lines) {
@@ -143,4 +155,38 @@ test("expected absence with a pre-existing contract -> allow", () => {
 test("counter initialized to zero with no missing-capability context -> allow", () => {
   const diffText = mkDiff("src/main/java/com/x/service/Counter.java", ["    int count = 0;"]);
   assert.equal(evaluate({ diffText, turnText: "Init the counter." }).allow, true);
+});
+
+// =============================== CLI file-mode (the hook interface) ============================
+
+const F0060_DIFF = mkDiff(QS, [
+  "    .issuanceStrength(Strength.UNKNOWN) // no issuance metric in projection",
+  "    .employerDiversity(Strength.UNKNOWN) // the projection has no employer-diversity metric",
+]);
+
+test("CLI --fingerprints prints one fingerprint per candidate", () => {
+  const diff = writeTmp("x.diff", F0060_DIFF);
+  const r = spawnSync(process.execPath, [LIB, "--fingerprints", "--diff", diff], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.split(/\r?\n/).filter(Boolean).length, 2);
+});
+
+test("CLI --diff/--turn returns allow=false for a buried F0060", () => {
+  const diff = writeTmp("x.diff", F0060_DIFF);
+  const turn = writeTmp("turn.txt", "Fix applied (F0060). Tests green.");
+  const r = spawnSync(process.execPath, [LIB, "--diff", diff, "--turn", turn], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  const v = JSON.parse(r.stdout);
+  assert.equal(v.allow, false);
+  assert.equal(v.violations.length, 2);
+});
+
+test("CLI --baseline subtracts pre-existing candidates -> allow", () => {
+  const diff = writeTmp("x.diff", F0060_DIFF);
+  const fpRun = spawnSync(process.execPath, [LIB, "--fingerprints", "--diff", diff], { encoding: "utf8" });
+  const baseline = writeTmp("base.txt", fpRun.stdout);
+  const turn = writeTmp("turn.txt", "Touched a nearby line.");
+  const r = spawnSync(process.execPath, [LIB, "--diff", diff, "--turn", turn, "--baseline", baseline], { encoding: "utf8" });
+  assert.equal(r.status, 0);
+  assert.equal(JSON.parse(r.stdout).allow, true);
 });
