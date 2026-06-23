@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# run-integrity.sh — perform an integrity review with AUTOMATIC fallback.
+# run-integrity.sh — Codex integrity review with automatic fallback.
 #
-# Tries the codex command; if codex is absent, exits non-zero, times out, or returns no DECISION
-# line, it emits a FALLBACK directive naming the in-session do:change-skeptic agent. This fully
-# automates the "codex failed -> fire the skeptic" decision so the caller never has to judge whether
-# codex worked. (Agent dispatch itself stays with the caller/main loop — a script cannot spawn a
-# Claude subagent — but WHICH reviewer to use is decided here, end to end.)
+# If Codex is absent, fails, times out, or returns no DECISION, emit
+# SOURCE: change-skeptic plus dispatch action. The caller dispatches the agent.
 #
 # Usage:  run-integrity.sh [packet-file]      packet-file = the review prompt (fed to codex on stdin)
 # Env:    INTEGRITY_CODEX_CMD   codex command as a SHELL STRING (run via `bash -c`); for operator
@@ -25,11 +22,8 @@
 #                  on failure -> "SOURCE: change-skeptic" + REASON + ACTION (dispatch the agent).
 # Always exits 0 (advisory): the caller reads SOURCE and acts.
 #
-# EGRESS SCRUBBING (security): the packet is sent verbatim to an EXTERNAL LLM (codex). Before it
-# leaves the machine it is routed through the shared secret-scrubber. This is the egress chokepoint:
-# scrubbing is mandatory and FAIL-CLOSED -- if the scrubber is missing or errors we do NOT send raw
-# text; we fall back to the in-session do:change-skeptic instead (which leaks nothing). Availability
-# stays fail-open (a missing scrubber degrades to the skeptic; it never hard-blocks the session).
+# EGRESS SCRUBBING: before external LLM egress, route packet through the shared
+# scrubber. Scrub failure sends nothing and falls back without hard-blocking.
 set -uo pipefail
 
 packet="${1:-}"
@@ -79,7 +73,7 @@ run_scrub() {
 emit_fallback() {  # $1 = reason
   echo "SOURCE: change-skeptic"
   echo "REASON: codex unavailable -- $1"
-  echo "ACTION: dispatch the do:change-skeptic agent as the in-session integrity review of this turn (degraded fallback)."
+  echo "ACTION: dispatch do:change-skeptic for in-session integrity review (fallback)."
   exit 0
 }
 

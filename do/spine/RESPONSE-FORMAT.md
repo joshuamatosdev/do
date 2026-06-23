@@ -64,14 +64,26 @@ REPORT + FULL. Evidence for the claims this turn makes: file:line, command outpu
 
 ### `## Remaining Steps`
 
-What is left **to fulfill the request** — not everything you could conceivably do. One `- [ ] step`
-per item; `- [x] None — <proof>` when the request is met. An in-scope `- [ ]` you could act on means
-the turn is **not** done — do it, don't ask. Do NOT pad this list with adjacent / optional /
-nice-to-have work: omit it, or, if it's genuinely worth recording, park it
-`- [ ] [LATER] <out-of-scope item>` — the continuation gate IGNORES `[LATER]`, so parked work never
-traps you into chasing self-generated follow-ups. The only OTHER sanctioned stop with an
-open in-scope item is a genuine user-decision `- [ ] [USER] <the specific irreversible or
-outward-facing decision only the user can make>`. A blocker escalates to `codex --decide`.
+What is left **to fulfill the request** and drain the discovered frontier. One `- [ ] step`
+per item; `- [x] None — <proof>` when the request and frontier are complete. An open non-`[USER]`
+item means the turn is **not** done — do it, don't ask.
+
+Work frontier:
+
+1. Finish the requested objective.
+
+2. Classify discovered work.
+
+3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.
+
+4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.
+
+Execution loop:
+`objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
+
+The only sanctioned open item is a genuine user-decision
+`- [ ] [USER] <the specific irreversible or outward-facing decision only the user can make>`.
+A blocker escalates to `codex --decide`.
 
 ### Bugs / Gaps / Inconsistencies — conditional, only when merited
 
@@ -108,11 +120,11 @@ N/A is allowed but the row must state **why** + evidence. Never silently skip a 
 
 FULL only. Prove both commitments. Mark ✓ / ⚠ / N/A with one-line evidence (file:line, command output, or "no code this turn — <reason>"). Don't pad N/A — give the reason.
 
-**How commitment 1 was met** — end-to-end, nothing deferred:
+**How commitment 1 was met** — end-to-end, frontier drained:
 
 Check | ✓ / ⚠ / N/A | Evidence
 ---|---|---
-No work deferred — everything asked was attempted this turn | |
+No frontier work left undrained — everything required or discovered-safe was attempted this turn | |
 No open issues left behind — or surfaced under Bugs / Gaps / Inconsistencies | |
 Did not stop at a perceived blocker — pushed through, or user declared it valid | |
 
@@ -132,9 +144,9 @@ Edge case test | |
 
 ## Stop-Work Checklist (confirm before ending a turn)
 
-- The request is met, or the only thing left is a `- [ ] [USER]` decision (irreversible / outward-facing) — not a blocker you can push through or escalate, and not beneath-attention trivia you should just decide yourself. Adjacent / out-of-scope work is parked `- [ ] [LATER]`, not chased. A stop with open in-scope work or "awaiting your direction" is rejected by the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
+- The request is met and the discovered frontier is drained, or the only thing left is a `- [ ] [USER]` decision (irreversible / outward-facing) — not a blocker you can push through or escalate, and not beneath-attention trivia you should just decide yourself. A stop with open non-`[USER]` work or "awaiting your direction" is rejected by the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
 
-- Nothing deferred — everything asked was attempted this turn, or surfaced under Bugs / Gaps / Inconsistencies.
+- Frontier drained — everything required or discovered-safe was attempted this turn, or surfaced under Bugs / Gaps / Inconsistencies.
 
 - Tests run and green — or stated explicitly that no code changed this turn.
 

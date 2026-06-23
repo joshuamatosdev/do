@@ -2,7 +2,7 @@
 
 Run do's engineering agents as a Claude Code **agent team**: a lead decomposes a build, assigns each
 task to an engineering specialist (engineer / distinguished-engineer / test-engineer / docs), then
-integrates, gates, and ships the change. Deferred / follow-up work converges to a neutral
+integrates, gates, and ships the change. Classified residual findings converge to a neutral
 `findings.json`, which a selectable **sink** renders to a tracker. (Security hardening is `red-blue`.)
 
 - **Default sink is local and offline** — a Markdown issue tracker under `issues/`. No service, no

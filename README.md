@@ -137,7 +137,7 @@ Modules are chosen at `/do:run setup` or added with
 | `completion-gates` | evidence gates: schema/DB, security, API/contract, operations. | — |
 | `memory-discipline` | File-based memory: a `MEMORY.md` index + one-fact-per-file + `do-remember` (write) and `do-memory-audit` (review). | — |
 | `codex-integrity` | A Stop hook that sends the (scrubbed) assistant turn text to an external Codex LLM for adversarial review (read-only file access); fail-open to `change-skeptic` when Codex is absent. | `codex` CLI |
-| `codex-later` | A Stop hook that acts on `[LATER]` parked items and aligns changed code to its registered ADR / grounded-docs spec via a Codex consult; fail-open. | `jq`, `codex` CLI |
+| `codex-later` | A Stop hook that drains open non-`[USER]` frontier items and aligns changed code to its registered ADR / grounded-docs spec via a Codex consult; fail-open. | `jq`, `codex` CLI |
 | `commit-doctor` | Auto-heals a failed `git commit` (classify → fix → retry, never `--no-verify`). | `jq` CLI |
 | `git-gate` | PreToolUse (Bash\|PowerShell) default-deny git allowlist: blocks destructive / history-rewriting git (`reset --hard`, `checkout`, `switch`, `rebase`, `merge`, force-push, branch create/delete, `stash`, `--no-verify`/`--amend`); allows read-only + safe forms (add, commit, push non-force, fetch, pull). | `node` |
 | `task-router` | The `do-route` skill. | — |

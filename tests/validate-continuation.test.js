@@ -6,10 +6,9 @@ const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 
 // Stop hook validate-continuation.sh: the SEMANTIC completion gate. It BLOCKS a turn that is
-// ending while its own response still lists IN-SCOPE actionable work (a "- [ ]" item tagged
-// neither [USER] nor [LATER]) or hands back passively ("awaiting your direction"). [USER] = a
-// decision only the user can make; [LATER] = adjacent/out-of-scope work the agent deliberately
-// parked -- both are non-blocking escape tags. A claimed blocker or repeated
+// ending while its own response still lists actionable work, uses [LATER] as an escape tag,
+// or hands back passively ("awaiting your direction"). [USER] = a decision only the user can make.
+// Discovered work is a frontier to drain, not a future queue. A claimed blocker or repeated
 // no-progress escalates with a "Never-Stop-Escalate" reason naming `codex --decide`. A [USER]-tagged
 // decision, a clean turn, or the hard iteration cap ALLOWS. Faithful test -- runs the bash hook;
 // skipped where bash/jq is unavailable.
@@ -20,6 +19,19 @@ const ROOT = join(__dirname, "..");
 const fwd = (p) => p.replace(/\\/g, "/");
 const HOOK = fwd(join(ROOT, "do", "spine", "hooks", "validate-continuation.sh"));
 const SPEC = join(ROOT, "do", "spine", "RESPONSE-FORMAT.md");
+const FRONTIER_STEPS = [
+  "1. Finish the requested objective.",
+  "2. Classify discovered work.",
+  "3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.",
+  "4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.",
+];
+const FRONTIER_LOOP = "objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop";
+function assertFrontierLanguage(out) {
+  for (const step of FRONTIER_STEPS) {
+    assert.ok(out.includes(step), `reason must include exact frontier step: ${step}`);
+  }
+  assert.ok(out.includes(FRONTIER_LOOP), "reason must teach the machine execution loop");
+}
 
 // Temp project WITH the spec (self-gate passes).
 function project() {
@@ -72,6 +84,7 @@ test("open '- [ ]' with no progress -> BLOCK (layer 1, not escalate)", { skip: S
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "actionable open work must block");
+  assertFrontierLanguage(out);
   assert.ok(!out.includes("Never-Stop-Escalate"), "first nudge is layer-1, not escalation");
 });
 
@@ -173,22 +186,26 @@ test("all open items [USER]-tagged -> ALLOW (escape tag)", { skip: SKIP }, () =>
   assert.equal(isBlock(run(d, tf)), false);
 });
 
-test("all open items [LATER]-tagged -> ALLOW (parked out-of-scope, not chased)", { skip: SKIP }, () => {
+test("[LATER]-tagged open item -> BLOCK (no [LATER] escape hatch)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
     { role: "assistant", text: RS("- [ ] [LATER] propagate the change to the other installs") },
   ]);
-  assert.equal(isBlock(run(d, tf)), false, "deliberately-parked [LATER] work must not block the stop");
+  const out = run(d, tf);
+  assert.equal(isBlock(out), true, "[LATER] must block because discovered work is frontier work");
+  assertFrontierLanguage(out);
 });
 
-test("in-scope open item alongside a [LATER] -> still BLOCK (can't dodge the request)", { skip: SKIP }, () => {
+test("open work alongside a [LATER] item -> BLOCK and treats both as frontier work", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
     { role: "assistant", text: RS("- [ ] finish the in-scope wiring\n- [ ] [LATER] nice-to-have refactor") },
   ]);
-  assert.equal(isBlock(run(d, tf)), true, "a real in-scope item still blocks even when a [LATER] is parked");
+  const out = run(d, tf);
+  assert.equal(isBlock(out), true, "open work must block without a [LATER] escape hatch");
+  assertFrontierLanguage(out);
 });
 
 test("claimed blocker -> BLOCK with escalate reason naming codex --decide", { skip: SKIP }, () => {

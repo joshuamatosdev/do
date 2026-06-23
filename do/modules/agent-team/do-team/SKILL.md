@@ -1,6 +1,6 @@
 ---
 name: do-team
-description: Run do's ENGINEERING agents as a Claude Code agent team — decompose a build into tasks, assign each to the right engineering specialist (engineer / distinguished-engineer / test-engineer / docs), integrate, gate, and ship as one coordinated team. Use to BUILD a feature, change, endpoint, or module with multiple engineers working in parallel. Deferred / follow-up work is tracked to a neutral findings.json rendered to a local Markdown tracker (default) or GitHub. Triggers on "build this as a team", "launch an engineering team", "team up to implement X", "spin up a team to build this", "can you get a team on building this", "team work makes the dream work", or "/do-team". For security hardening use red-blue (the security team); when you have a task but have not chosen who runs it, use do-route.
+description: Run do's ENGINEERING agents as a Claude Code agent team — decompose a build into tasks, assign each to the right engineering specialist (engineer / distinguished-engineer / test-engineer / docs), integrate, gate, and ship as one coordinated team. Use to BUILD a feature, change, endpoint, or module with multiple engineers working in parallel. Classified residual findings are tracked to a neutral findings.json rendered to a local Markdown tracker (default) or GitHub. Triggers on "build this as a team", "launch an engineering team", "team up to implement X", "spin up a team to build this", "can you get a team on building this", "team work makes the dream work", or "/do-team". For security hardening use red-blue (the security team); when you have a task but have not chosen who runs it, use do-route.
 ---
 
 # do-team — engineering team
@@ -77,8 +77,9 @@ Hand the integrated change to `do:commit` to group, commit, and push (if authori
 
 ### 7 — Track residuals
 
-Deferred items, known gaps, and follow-up work the build surfaced go to one neutral `findings.json`,
-rendered to a tracker so nothing is silently dropped:
+Residual findings that are rejected as irrelevant, too broad, externally owned, user-owned, or
+approval-gated go to one neutral `findings.json`, rendered to a tracker so nothing is silently
+dropped:
 
 ```json
 {
@@ -126,6 +127,6 @@ A sink is any tool that reads `findings.json` and does an idempotent upsert keye
 
 1. The lead coordinates; teammates build. Process before implementation; bounded change surface.
 2. Never ship on red tests, an unverified high-stakes claim, or without the `do:review` gate.
-3. Security-sensitive work is authorized-local-only — for real hardening defer to `red-blue`.
+3. Security-sensitive work is authorized-local-only — for real hardening route to `red-blue`.
 4. Never file GitHub issues without a dry-run + explicit user confirmation.
-5. One team per session; no nested teams. Residuals are tracked, never silently dropped.
+5. One team per session; no nested teams. Residuals are classified and tracked, never silently dropped.

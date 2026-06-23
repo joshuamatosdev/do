@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 # codex.sh — forward the CURRENT session to Codex as a one-shot consult.
 #
-# Why this is a script and not inline Claude bash: the prior SKILL.md asked
-# Claude to hand-synthesize the "context" and "neutral framing" sent to Codex.
-# Claude — the very reasoner whose judgment is being checked — reliably (a) led
-# the witness and (b) under-included context. Both failure modes are designed
-# out here by forwarding the ACTUAL conversation transcript (the ground truth,
-# neutral by construction), like the `advisor` tool forwards full history.
-# Claude's only remaining input is the optional question string.
+# Forwards real transcript context so the checked reasoner does not hand-build
+# its own evidence. Claude's only added input is the optional question string.
 #
 # HONESTY ABOUT GUARANTEES (do not overclaim — see codex review 2026-05-26):
 #   * NOT enforced read-only. We pass --dangerously-bypass-approvals-and-sandbox
@@ -17,10 +12,8 @@
 #     Under the bypass flag Codex effectively has FULL filesystem access. This is
 #     a consult by CONVENTION (read + advise), not a sandbox-enforced guarantee.
 #     `-s read-only` is left on as a best-effort hint; the bypass flag overrides it.
-#   * NOT the whole chat. Tool-RESULT bodies are elided to <tool_result> markers
-#     and only the last ~80KB of extracted text is sent. The most-recent user
-#     message is forwarded separately and untruncated so the real question
-#     survives truncation.
+#   * NOT the whole chat. Tool-result bodies are elided, only the last ~80KB is
+#     sent, and the latest user message is sent separately in full.
 #
 # Usage:  codex.sh "<question>"     # question forwarded verbatim
 #         codex.sh                  # no question -> Codex infers the open
@@ -207,7 +200,7 @@ QUESTION="${1:-}"
 # workspace on every call. Kill switch: ASK_CODEX_ALLOW_EDITS=0 forces read-only
 # "Please advise." (the prior advise-only behavior).
 CODEX_SANDBOX="workspace-write"
-CODEX_CLOSER="You are a Distinguished Software Engineer, you are to evaluate the current situation and decide how to proceed, before acting surface your ideas. Never take deferment at face value when a better engineering solution is still practical."
+CODEX_CLOSER="You are a Distinguished Software Engineer. Evaluate, state your approach, then act. Do not accept deferment when a practical fix exists."
 CODEX_EDIT_NOTE="WORKSPACE-WRITE (edits allowed)"
 if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "0" ]; then
   CODEX_SANDBOX="read-only"

@@ -87,8 +87,10 @@ Before touching any tool:
 #### 4. Strategic Thinking (big picture)
 
 - **Asymmetry**: Defender must patch ALL holes. You only need ONE.
-- **Intuition engineering**: Log why something "feels wrong." Verify later. Update mental DB.
-- **Unknown management**: Can't understand something? Add to "investigate later" list. Just-in-Time Learning.
+- **Intuition engineering**: Log why something "feels wrong." Verify now when authorized and safe;
+  otherwise record the boundary reason and trigger condition.
+- **Unknown management**: Classify unknowns immediately. Safe / relevant / tool-executable -> probe
+  now; approval-gated or out-of-scope -> record the boundary reason and trigger condition.
 
 ### Amateur vs Pro: 7-Phase Comparison
 
@@ -167,11 +169,12 @@ Before touching any tool:
 
 **Coverage plan — name the classes up front.**
 
-"Select" above picks the 1-2 classes you attack today; the coverage plan records the rest, so a class
-is deferred on purpose, never missed by accident. List the in-scope OWASP/CWE classes (the
-`do:security-recon` coverage taxonomy) and mark each: probing this session, or deferred. A deferred
-class is not clean — it is not-checked, and it is next session's first target. Carry the plan in your
-engagement log so coverage builds across sessions instead of starting over each day.
+"Select" above picks the 1-2 classes you attack today; the coverage plan classifies the rest, so a
+class is boundary-classified rather than missed. List the in-scope OWASP/CWE classes (the
+`do:security-recon` coverage taxonomy) and mark each: probing this session, not selected for this
+authorized session, or blocked by approval / scope. A not-selected class is not clean — it is
+untested; record the boundary reason and trigger condition in your engagement log so coverage builds
+across sessions instead of starting over each day.
 
 ### Phase 1: RECON
 
@@ -375,6 +378,6 @@ Every 20 minutes ask yourself: **"Am I making progress?"**
 ### Session End Checklist
 
 - [ ] Save all Burp/Caido project files
-- [ ] Record any "weird but not yet exploitable" behaviors (future gadgets)
+- [ ] Record odd behaviors as candidate chain inputs with evidence and boundary reason
 - [ ] Update notes with failed attempts (don't re-test with same techniques)
 - [ ] Log findings in your engagement log

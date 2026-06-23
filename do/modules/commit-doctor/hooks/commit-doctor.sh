@@ -95,16 +95,14 @@ if [ "$new_retry" -ge 4 ]; then
   jq -nc --arg f "$incident_file" --arg o "$output" '{
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
-      additionalContext: ("COMMIT-DOCTOR: maximum retries (4) exceeded.\nIncident written to: " + $f + "\n\nFinal failure output:\n" + $o + "\n\nDo NOT retry automatically. Present this to the user and request manual intervention.")
+      additionalContext: ("COMMIT-DOCTOR: max retries exceeded. Incident: " + $f + "\n\nFinal failure output:\n" + $o + "\n\nDo not retry automatically; show the failure and request manual intervention.")
     }
   }'
   exit 0
 fi
 
 # --- Emit trigger context ---
-msg="COMMIT-DOCTOR TRIGGERED (attempt ${new_retry} of 3):
-
-A git commit just failed. Dispatch the do:commit agent now, before any other action, to heal it.
+msg="COMMIT-DOCTOR: commit failed (attempt ${new_retry}/3). Dispatch do:commit now to classify, fix, stage, and retry. Never use --no-verify.
 
   Agent({
     subagent_type: \"do:commit\",
@@ -115,8 +113,7 @@ REPO_PATH: ${cwd}
 FAILURE_OUTPUT:
 ${output}\"
   })
-
-The do:commit agent classifies the cause, fixes it, re-stages, and retries — never with --no-verify."
+"
 
 jq -nc --arg m "$msg" '{
   hookSpecificOutput: {

@@ -34,5 +34,5 @@ mark="$mark_dir/$sid.done"
 mkdir -p "$mark_dir" 2>/dev/null || true
 : > "$mark" 2>/dev/null || true
 
-echo "do docscheck: this project registers references/specs in a grounded-docs index ($idx/). BEFORE editing governed code, verify it complies with the registered source -- look it up and cite chunk_id + source_path:line. Use the index's CLI (Node scaffold: node $idx/grounded-docs.mjs lookup \"<topic>\" / cite <chunk_id>; a Python index uses its own, e.g. python -m cli.agent_docs lookup). Ground every spec/reference claim against the source before you conclude. Full rule + exact command: .claude/ALWAYS-READ.md (@docscheck). Re-issue this edit once you have checked -- this gate fires once per session." >&2
+echo "do docscheck: grounded-docs index found ($idx/). Before editing governed code, lookup/cite the source, verify compliance, then retry. Need chunk_id + source_path:line. Node: node $idx/grounded-docs.mjs lookup \"<topic>\"; node $idx/grounded-docs.mjs cite <chunk_id>. Python index: use its lookup/cite CLI. Rule: .claude/ALWAYS-READ.md. Fires once/session." >&2
 exit 2

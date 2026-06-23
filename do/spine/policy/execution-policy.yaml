@@ -535,7 +535,7 @@ enforcement_surface:
     - hook: codex-later-stop.sh
       event: Stop
       module: codex-later
-      note: acts on [LATER] parked items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_LATER_OFF=1
+      note: drains open non-[USER] frontier items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_LATER_OFF=1
     - hook: oppihtnias-activate.js
       event: SessionStart
       module: oppihtnias
@@ -607,9 +607,9 @@ module_and_workflow_surface:
       phase: 7
     - id: codex-later
       module: codex-later
-      when: a turn left [LATER] parked items, OR changed code governed by a registered ADR / grounded-docs spec
+      when: a turn left open non-[USER] frontier items, OR changed code governed by a registered ADR / grounded-docs spec
       installs: Stop hook (codex-later-stop.sh); needs jq + codex
-      does: acts on in-scope [LATER] items; aligns changed code to its ADR/spec (@docscheck); fail-open
+      does: drains safe/relevant/tool-executable frontier items; aligns changed code to its ADR/spec (@docscheck); fail-open
       phase: 9
     - id: commit-doctor
       module: commit-doctor

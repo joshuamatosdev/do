@@ -119,8 +119,8 @@ Purpose: surface bugs noticed while working, including ones outside the immediat
 
 Do: for each — symptom, `file:line`, and why it is wrong. Confirm before claiming: read the path
 (`do:bug-static`) or run it (`do:bug-runtime`), and use `superpowers:systematic-debugging` on a real
-failure. Fix what is in scope; park the rest as `- [ ] [LATER]` — never silently change unrelated
-code.
+failure. Fix what is in scope; classify discovered work; drain safe/relevant/tool-executable items;
+reject unrelated or user-owned items — never silently change unrelated code.
 
 Proof: each bug cites `file:line` plus the failing path or test.
 
@@ -133,7 +133,8 @@ Purpose: surface performance improvements noticed in the code worked on.
 Do: name the hot path or waste (N+1, repeated work, needless allocation or IO, missing index/cache),
 the `file:line`, and the expected win. Measure before claiming a gain where you can — for web, the
 `chrome-devtools` perf skills (traces, LCP) give real numbers. Propose only; never trade correctness
-or clarity for speed unless asked. Park out-of-scope items as `- [ ] [LATER]`.
+or clarity for speed unless asked. Classify discovered work; drain safe/relevant/tool-executable
+items and reject unrelated or user-owned items.
 
 Proof: a measurement, or a concrete before/after, where feasible.
 

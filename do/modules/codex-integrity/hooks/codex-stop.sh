@@ -8,7 +8,7 @@
 #          flagged. Codex unavailable / scrub-fail -> stderr advisory naming do:change-skeptic.
 #        - advisory mode (flag "off"):     emit a stderr reminder to run the review (no Codex call).
 #   B. codex-later (module: codex-later)
-#        - [LATER] parked-work + ADR/spec alignment -> BLOCK with a directive to consult Codex.
+#        - discovered frontier + ADR/spec alignment -> BLOCK with a directive to consult Codex.
 #
 # Behavior-preserving merge: each concern keeps its own Codex path (integrity calls Codex in-hook;
 # codex-later blocks and Claude makes the consult). The shared prologue (recursion guard, manifest
@@ -83,12 +83,10 @@ if [ "$integrity_on" = 1 ]; then
       else
         pkt=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/do-adv-$$.txt")
         {
-          echo "ADVERSARIAL INTEGRITY REVIEW. Assume this turn is wrong until proven otherwise. Hunt for:"
-          echo "false or unverifiable claims, feature loss, stub-or-fixture-only delivery, a blocked task"
-          echo "quietly dropped, skipped alternatives, hidden behavior changes, and bugs in any code edited"
-          echo "this turn. You have read-only FS access (-C) to verify against the actual files."
-          echo "End with EXACTLY ONE line: 'DECISION: ALLOW' if you find ZERO issues, otherwise"
-          echo "'DECISION: BLOCK' followed by a numbered list of the specific issues to fix."
+          echo "ADVERSARIAL INTEGRITY REVIEW. Assume failure. Check false/unverified claims,"
+          echo "feature loss, stub/fixture-only delivery, dropped blockers/options, hidden"
+          echo "behavior changes, and bugs in edited code. Read-only FS is available."
+          echo "End exactly: DECISION: ALLOW if clean; else DECISION: BLOCK + numbered issues."
           echo
           echo "=== TURN WORK (assistant text this turn) ==="
           printf '%s\n' "$scrubbed_text"
@@ -126,7 +124,7 @@ fi
 if [ "$later_on" = 1 ] && [ "${CODEX_LATER_OFF:-}" != "1" ] && [ "$have_transcript" = 1 ]; then
   # Decline-respect: if the user rejected a consult or interrupted a tool call recently, stay quiet.
   if ! tail -c 200000 "$transcript" 2>/dev/null | grep -qiE "doesn't want to proceed|request interrupted by user"; then
-    # Branch 1: parked [LATER] items in the most recent assistant turn.
+    # Branch 1: open non-[USER] items in the most recent assistant turn.
     last_assistant=$(jq -rs '
       [ .[] | select(.type=="assistant")
         | (.message.content) as $c
@@ -134,7 +132,7 @@ if [ "$later_on" = 1 ] && [ "${CODEX_LATER_OFF:-}" != "1" ] && [ "$have_transcri
           else ([$c[]? | select(.type=="text") | .text] | join("\n")) end ]
       | last // ""
     ' "$transcript" 2>/dev/null || true)
-    later=$(printf '%s\n' "$last_assistant" | grep -E '\[ \][[:space:]]*\[LATER\]' || true)
+    frontier=$(printf '%s\n' "$last_assistant" | grep -E '^[[:space:]]*-[[:space:]]*\[ \]' | grep -vE '\[USER\]' || true)
 
     # Branch 2: code changed THIS turn (Edit/Write/NotebookEdit since the last user message).
     changed=$(jq -rs '
@@ -156,17 +154,17 @@ if [ "$later_on" = 1 ] && [ "${CODEX_LATER_OFF:-}" != "1" ] && [ "$have_transcri
     align=""
     { [ -n "$code_changed" ] && [ "$adr_present" = "1" ]; } && align=1
 
-    if [ -n "$later" ] || [ -n "$align" ]; then
+    if [ -n "$frontier" ] || [ -n "$align" ]; then
       if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "1" ]; then
-        fix_clause='ALIGN it: Codex MAY apply the fix directly (edit mode is ON -- ASK_CODEX_ALLOW_EDITS=1, so codex.sh runs workspace-write); run the consult, let it write the minimal fix, then VERIFY the result, and fall back to do:distinguished-engineer / do:test-engineer if the edit is wrong or insufficient.'
+        fix_clause='ALIGN: Codex may edit directly (ASK_CODEX_ALLOW_EDITS=1, workspace-write). Run consult, verify result, then fall back to do:distinguished-engineer / do:test-engineer if needed.'
       else
-        fix_clause='ALIGN it: have Codex review and PROPOSE the fix, then apply it yourself; fall back to do:distinguished-engineer (implementation) or do:test-engineer (tests). To let Codex apply fixes directly, set ASK_CODEX_ALLOW_EDITS=1.'
+        fix_clause='ALIGN: have Codex propose the fix, apply it yourself, then fall back to do:distinguished-engineer / do:test-engineer if needed. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
       fi
       sections=()
-      [ -n "$later" ] && sections+=("$(printf 'PARKED WORK -- this turn left deferred items:\n%s\nEVALUATE each: do-now if in-scope / safe / reversible, or if all in-scope items are already complete; else keep-deferred WITH a reason.' "$later")")
-      [ -n "$align" ] && sections+=("$(printf 'ADR / SPEC ALIGNMENT -- this turn changed code and this project has a registered ADR / specification. Per @docscheck (.claude/ALWAYS-READ.md): review the changed code against its governing ADR (docs/adr/) or registered spec (grounded-docs index -- `node grounded-docs/grounded-docs.mjs lookup <topic>` then `cite <chunk_id>`). If it diverges, %s If no registered source governs these files, say so and proceed.' "$fix_clause")")
+      [ -n "$frontier" ] && sections+=("$(printf 'WORK FRONTIER:\n%s\n1. Finish the requested objective.\n2. Classify discovered work.\n3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.\n4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.\nExecution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.' "$frontier")")
+      [ -n "$align" ] && sections+=("$(printf 'ADR/SPEC: changed code has a registered ADR/spec. Per @docscheck, review via docs/adr or grounded-docs lookup/cite. If divergent, %s If no source governs, say so and proceed.' "$fix_clause")")
       body=$(printf '%s\n\n' "${sections[@]}")
-      block_reasons+=("$(printf '[CODEX-LATER] Before stopping:\n\n%s\nConsult Codex (the `codex` skill) for the review(s) above, weigh its advice against the code and the governing docs (advisory, not binding), then ACT on the result this turn. Fires once.' "$body")")
+      block_reasons+=("$(printf '[CODEX-LATER] Before stopping:\n\n%s\nConsult Codex for these review(s), weigh advice against code/docs, then act this turn. Fires once.' "$body")")
     fi
   fi
 fi

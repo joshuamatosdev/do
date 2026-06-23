@@ -1,8 +1,18 @@
 ### Codex-later gate (codex-later module)
 
-**Stop hook on parked work.** When a turn leaves `- [ ] [LATER] ...` items, the
-`codex-later-stop.sh` Stop hook blocks once and directs you to consult Codex (the `codex`
-skill) to EVALUATE each parked item — do-now if in-scope / safe / reversible / or if all in-scope items are complete, else keep-deferred with a reason — then ACT on the result that turn. Deferred work gets and independent review instead of silently accruing.
+**Stop hook on discovered frontier.** When a turn leaves open non-`[USER]` items,
+`codex-later-stop.sh` blocks once and directs you to consult Codex (the `codex` skill) with this
+work frontier rule:
+
+1. Finish the requested objective.
+
+2. Classify discovered work.
+
+3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.
+
+4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.
+
+Execution loop: `objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
 
 **ADR / spec alignment.** When a turn changes code AND the project has a registered ADR
 (`docs/adr/`) or grounded-docs specification index, the same hook also directs a review of the

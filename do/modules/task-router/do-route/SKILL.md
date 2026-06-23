@@ -29,7 +29,8 @@ mode of either. Those are *destinations* you can choose; they never call you. Pi
    the parts benefit from teammates talking.
 5. **Synthesize.** Collect, dedup, reconcile. Adversarially verify any high-stakes output before you
    trust it — do not relay an unverified agent claim as fact.
-6. **Report.** What you routed where, the result, and any residual gap or follow-up.
+6. **Report.** What you routed where, the result, and the residual classification: drained,
+   rejected, user-owned, or routed.
 
 ## Routing table (intent → handler)
 

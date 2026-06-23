@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Stop hook: SEMANTIC continuation gate. Where validate-response-format.sh checks report SHAPE,
 # this checks COMPLETION -- it blocks a turn that is ENDING while its own response still lists
-# IN-SCOPE actionable work (an open "- [ ]" item tagged neither [USER] nor [LATER]), a passive
+# actionable work (an open "- [ ]" item not tagged [USER]), a passive
 # "awaiting your direction" hand-back, or a question mark (owner act-and-finish policy: ACT and FINISH the work, not hand it back -- never end a
 # turn asking the user -- ACT, or tag a real [USER] decision phrased without a question mark).
 # Implements the "Never stop; escalate" policy: a CLAIMED blocker, or repeated
 # no-progress, routes to a codex --decide go/no-go (block-with-mandate -- the hook tells Claude to
 # fire the codex skill on the next continuation; it does NOT call codex itself). Only a Codex HOLD,
-# a [USER]-tagged decision, an all-parked ([LATER]) / complete turn, or the hard iteration cap ends it.
+# a [USER]-tagged decision, a complete turn, or the hard iteration cap ends it.
 #
 # Separate from the format gate by design (structural vs. semantic; independently testable).
 # Self-gates on .claude/RESPONSE-FORMAT.md so it only runs in do-installed projects.
@@ -76,17 +76,14 @@ toolcount=$(jq -rs '
 case "$toolcount" in (*[!0-9]*|'') toolcount=0;; esac
 
 # --- Signals over the turn text. --------------------------------------------------------------
-# Open checkbox items: any "- [ ]" line. An item counts as actionable only when tagged NEITHER
-# [USER] (a decision only the user can make) NOR [LATER] (adjacent / optional / out-of-scope work
-# the agent deliberately parked -- NOT part of fulfilling this request). [LATER] is the
-# pressure-free home for "noticed it, not doing it now": it never blocks the stop. That is what
-# lets an agent with a directive and tools ACT and finish, instead of manufacturing and chasing
-# endless self-generated follow-ups (codebase bloat) or nagging with beneath-attention trivia.
+# Open checkbox items: any "- [ ]" line. Only a [USER] decision can be non-actionable.
+# [LATER] is not an escape hatch. Open non-[USER] work is frontier work.
+# Drain safe, relevant, tool-executable frontier work before stopping.
 open_lines=$(printf '%s' "$text" | grep -E '^[[:space:]]*-[[:space:]]*\[ \]' || true)
 untagged_open=0; has_open=0; action_user=0; user_action_lines=""
 if [ -n "$open_lines" ]; then
   has_open=1
-  printf '%s' "$open_lines" | grep -qvE '\[(USER|LATER)\]' && untagged_open=1
+  printf '%s' "$open_lines" | grep -qvE '\[USER\]' && untagged_open=1
   # A [USER] tag legitimately ENDS the turn ONLY when it encodes a DECISION the user must make (a
   # choice: approve / which / whether / pick). A [USER] item phrased as a doable ACTION (restart,
   # run, commit, build, install, deploy, fix, ...) is the agent handing back its OWN work -- that
@@ -145,8 +142,8 @@ state_file="$state_dir/$sid.json"
 
 allow_clean() { rm -f "$state_file" 2>/dev/null || true; exit 0; }
 
-# 1. There IS open work but every open item is a legitimately-parked [USER] DECISION or [LATER]
-#    (out-of-scope) -> nothing actionable remains in scope -> ALLOW. A [USER] item that is really a
+# 1. There IS open work but every open item is a legitimate [USER] DECISION
+#    -> nothing actionable remains in scope -> ALLOW. A [USER] item that is really a
 #    doable ACTION (action_user=1) does NOT qualify -- the agent must do it, not hand it back. A
 #    question mark (question=1) also disqualifies -- the turn is still asking the user something.
 if [ "$has_open" = "1" ] && [ "$untagged_open" = "0" ] && [ "$action_user" = "0" ] && [ "$question" = "0" ]; then allow_clean; fi
@@ -182,19 +179,21 @@ if [ "$progress" = "1" ]; then stall_new=0; else stall_new=$((stall + 1)); fi
 escalate=0
 { [ "$blocker" = "1" ] || [ "$stall_new" -ge "$K" ]; } && escalate=1
 
-# Quote up to 3 untagged open items for the reason.
-items=$( { printf '%s\n' "$open_lines" | grep -vE '\[(USER|LATER)\]'; printf '%s\n' "$user_action_lines"; } | grep -E '\[ \]' | head -3 | sed 's/^[[:space:]]*//' | tr '\n' ' ' || true)
+# Quote up to 3 actionable frontier items for the reason.
+items=$( { printf '%s\n' "$open_lines" | grep -vE '\[USER\]'; printf '%s\n' "$user_action_lines"; } | grep -E '\[ \]' | head -3 | sed 's/^[[:space:]]*//' | tr '\n' ' ' || true)
+
+frontier_policy="1. Finish the requested objective. 2. Classify discovered work. 3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable. 4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain. Execution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop."
 
 if [ "$escalate" = "1" ]; then
-  reason="do continuation gate (Never-Stop-Escalate): you are ending the turn on a claimed blocker or with no forward progress, but actionable work remains. Do NOT hand back to the user yet. Fire \`codex --decide\` now on this go/no-go (the codex skill). On PROCEED, weigh its advice against the code and the governing docs, proceed only on a verified safe path, and keep working. Only a Codex HOLD -- or an irreversible/outward-facing action needing approval -- returns control; after a HOLD, tag the blocking item \`- [ ] [USER] <the decision, phrased as a choice: approve/which/whether>\` so this gate releases. If codex is unavailable, dispatch the do:change-skeptic agent (degraded fallback). Open work: ${items:-<see your Remaining Steps>}"
+  reason="do continuation gate (Never-Stop-Escalate): blocker/no-progress while frontier work remains. $frontier_policy Run \`codex --decide\`. PROCEED: continue only on a verified safe path. HOLD or irreversible/outward-facing approval: return with \`- [ ] [USER] <choice>\`. If Codex is unavailable, dispatch do:change-skeptic. Frontier work: ${items:-<see your Remaining Steps>}"
 else
-  reason="do continuation gate: you have a directive and tools -- take the next in-scope step. A \`- [ ] [USER]\` item that is actually a doable ACTION you can perform (restart, run, commit, build, install, deploy, fix, sync, migrate...) is YOUR work handed back to the user -- DO IT now, do not assign it to them. Adjacent / optional / out-of-scope work you are deliberately not doing this turn: tag it \`- [ ] [LATER] <item>\` and the gate ignores it -- do not chase it. Reserve \`- [ ] [USER] <decision>\` for a genuinely IRREVERSIBLE or OUTWARD-FACING CHOICE only the user can make (approve / which / whether) -- never a task you could run yourself; on a non-blocking local detail (a name, a format) do not guess or assume -- ground it in the code and convention and state the fact, or form a hypothesis and test it. Open work: ${items:-<see your Remaining Steps>}"
+  reason="do continuation gate: frontier work remains. $frontier_policy \`[USER]\` is only for irreversible/outward-facing choices, never agent-runnable work. Ground local details in code or test a hypothesis. Frontier work: ${items:-<see your Remaining Steps>}"
 fi
 
 # Act-and-finish policy: whenever a question mark contributed to the block, name the rule on the
 # reason (EVERY path, not only the no-open-work case) so the agent always sees WHY a '?' fired.
 if [ "$question" = "1" ]; then
-  reason="$reason  --  act-and-finish policy: you have a directive and tools, so ACT and FINISH the work -- don't hand it back. A question mark in this turn is the signal you're asking the user instead of acting. ACT on the answer -- ground it and state the fact, or form a hypothesis and test it -- or record a genuine user-only decision as a \`- [ ] [USER] <choice>\` written WITHOUT a question mark, then re-emit with none."
+  reason="$reason  --  act-and-finish: a prose question mark means you are asking instead of acting. Act on the answer, ground/test it, or record a real user-only choice as \`- [ ] [USER] <choice>\` without a question mark."
 fi
 
 printf '{"blocks":%s,"stall":%s,"lastToolCount":%s}\n' "$blocks_new" "$stall_new" "$toolcount" > "$state_file" 2>/dev/null || true

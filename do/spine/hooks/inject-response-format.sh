@@ -9,31 +9,21 @@ fmt="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/RESPONSE-FORMAT.md"
 [ -f "$fmt" ] || exit 0
 
 cat <<'HEADER'
-[MANDATORY THIS TURN] Gated turn (question/plan/status/debug/implementation/handoff/completion)?
-Write to your tier's floor -- in TABLES and LISTS, not prose walls -- and cite file:line / command output.
-The Stop gate validate-response-format.sh classifies the turn and enforces the floor:
+[MANDATORY THIS TURN] Gated turn? Meet your tier floor in lean tables/lists and cite file:line or command output.
 
   TRIVIAL  <800 chars, no high-stakes edit                  -> exempt
   LITE     config/hook/docs/one-file/mechanical, Q&A        -> ## Goal | ## Immediate Actions | ## Remaining Steps  (Bugs:/Gaps:/Inconsistencies: only when merited)
   REPORT   long, no high-stakes code surface                -> LITE + ## Proof
   FULL     schema/migration/security edit, or >=3 prod files -> REPORT + ## Feature Completion Chain + ## Completion Checklist (both commitments)
 
-Before any "can't / don't know / blocked": check knowledge (repo -> docs/MCP -> WebSearch),
-verification (tests -> scripts -> E2E/Playwright -> probe), delegation (do agents/skills) -- use a
-real route or state what you checked. See .claude/capability-gate.md.
-
-With a directive and tools, take the next step when it is in-scope, reversible, and tool-executable.
-On a non-blocking local detail (a name, a format), do not guess or assume -- gain certainty from the
-code and convention and state the fact; when a fact is not in hand, form a hypothesis, state and test
-it. Do not stop to ask a detail you can settle.
-Bound work to the REQUEST -- park adjacent/optional work `- [ ] [LATER]` (the gate ignores it),
-never chase it. Reserve `- [ ] [USER] <decision>` for a genuinely irreversible/outward-facing call;
-escalate a real blocker with `codex --decide`. Never "awaiting your direction." Never END A TURN
-ASKING THE USER -- the continuation gate fires on ANY question mark in your turn (act-and-finish
-policy); ACT on the answer, or record a genuine user-only decision as `- [ ] [USER] <choice>`
-written WITHOUT one. The Stop gate validate-continuation.sh enforces this; `/goal "<measurable
-condition>"` holds a multi-turn goal.
-
-Format rules: lean tables (no outer pipes), blank line between numbered items, line break after a
-label colon. Unsure -> write clearly, with the bottom line up front. Canonical source: .claude/RESPONSE-FORMAT.md.
+Before "can't/unknown/blocked": check repo/docs/web, verify with tests/scripts/probes, or delegate.
+Work frontier:
+1. Finish the requested objective.
+2. Classify discovered work.
+3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.
+4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.
+Execution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.
+`[USER]` = irreversible/outward decision only.
+No question mark at turn end; act on the answer or write a `[USER] <choice>` without one.
+Canon: .claude/RESPONSE-FORMAT.md and .claude/capability-gate.md.
 HEADER

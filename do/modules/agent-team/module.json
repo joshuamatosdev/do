@@ -1,6 +1,6 @@
 {
   "name": "agent-team",
-  "description": "Run do's engineering agents as a Claude Code agent team (do-team): decompose a build, assign engineering specialists, integrate, gate, and ship; track deferred / follow-up work to a neutral findings.json rendered to a local Markdown tracker (default) or GitHub. Requires the experimental agent-teams flag (set on install).",
+  "description": "Run do's engineering agents as a Claude Code agent team (do-team): decompose a build, assign engineering specialists, integrate, gate, and ship; track classified residual findings to a neutral findings.json rendered to a local Markdown tracker (default) or GitHub. Requires the experimental agent-teams flag (set on install).",
   "stackHint": [],
   "files": [
     ["do-team/SKILL.md", ".claude/skills/do-team/SKILL.md"],
