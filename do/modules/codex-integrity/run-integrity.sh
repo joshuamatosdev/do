@@ -2,7 +2,7 @@
 # run-integrity.sh — Codex integrity review with automatic fallback.
 #
 # If Codex is absent, fails, times out, or returns no DECISION, emit
-# SOURCE: change-skeptic plus dispatch action. The caller dispatches the agent.
+# SOURCE: change-skeptic plus dispatch action. The orchestrator dispatches the agent.
 #
 # Usage:  run-integrity.sh [packet-file]      packet-file = the review prompt (fed to codex on stdin)
 # Env:    INTEGRITY_CODEX_CMD   codex command as a SHELL STRING (run via `bash -c`); for operator
@@ -14,13 +14,17 @@
 #                               literal argument: no shell parsing, so a path with metacharacters is
 #                               passed verbatim and cannot inject. Ignored if INTEGRITY_CODEX_CMD set.
 #         INTEGRITY_CODEX_TIMEOUT  hard timeout in seconds   (default: 300)
+#         INTEGRITY_FORCE_MANUAL_TIMEOUT  set (non-empty) -> skip GNU `timeout` and always use the
+#                               manual background + poll + process-tree reap. Auto-used whenever GNU
+#                               `timeout` is absent; set it explicitly on hosts where GNU `timeout`
+#                               orphans the native codex child (see skills/codex/codex.sh).
 #         DO_SCRUB_CMD          secret-scrubber filter as a SHELL STRING (stdin->stdout, run via
 #                               `bash -c`); operator/test override. When unset, the bundled scrubber
 #                               (node <repoRoot>/lib/do-mon-context.js --scrub) is run as a direct
 #                               argv array -- repoRoot is NEVER interpolated into a shell string.
 # Output (stdout): on success -> "SOURCE: codex" + codex's verdict.
 #                  on failure -> "SOURCE: change-skeptic" + REASON + ACTION (dispatch the agent).
-# Always exits 0 (advisory): the caller reads SOURCE and acts.
+# Always exits 0 (advisory): the orchestrator reads SOURCE and dispatches the named action.
 #
 # EGRESS SCRUBBING: before external LLM egress, route packet through the shared
 # scrubber. Scrub failure sends nothing and falls back without hard-blocking.
@@ -96,15 +100,53 @@ if [ -s "$raw_in" ] && [ ! -s "$scrubbed" ]; then
 fi
 in="$scrubbed"
 
-# 3. run codex with a hard timeout, SCRUBBED packet on stdin; capture output + status.
-#    `timeout` takes a command + argv directly, so the default path needs no shell at all; the
-#    override path passes the operator's shell STRING as a single argv element to `bash -c`.
-have_timeout=""; command -v timeout >/dev/null 2>&1 && have_timeout="timeout ${timeout_s}s"
-if [ -n "${INTEGRITY_CODEX_CMD:-}" ]; then
-  out=$($have_timeout bash -c "$INTEGRITY_CODEX_CMD" < "$in" 2>&1); status=$?
-else
-  out=$($have_timeout "${codex_argv[@]}" < "$in" 2>&1); status=$?
-fi
+# 3. Run codex with a hard WALL-CLOCK on the SCRUBBED packet (stdin = $in); capture output+status.
+#    Portable bounding: prefer GNU `timeout`, but when it is ABSENT (minimal Windows/git-bash hosts)
+#    fall back to a manual background + poll + process-tree reap so codex is bounded EITHER WAY --
+#    previously a host without GNU `timeout` ran codex UNBOUNDED. A bare background kill leaves the
+#    native codex child orphaned (see skills/codex/codex.sh, the "~20-min orphaned codex.exe" burn),
+#    so the reap kills the whole tree: Windows by winpid (taskkill //T), POSIX by process group
+#    (setsid launch -> negative-PID group kill). status 124 == timed out (matches GNU `timeout`).
+run_codex() {  # $1 = input file fed to codex on stdin. Echoes codex output; returns its status.
+  local infile="$1"
+  if [ -z "${INTEGRITY_FORCE_MANUAL_TIMEOUT:-}" ] && command -v timeout >/dev/null 2>&1; then
+    if [ -n "${INTEGRITY_CODEX_CMD:-}" ]; then
+      timeout "${timeout_s}s" bash -c "$INTEGRITY_CODEX_CMD" < "$infile" 2>&1
+    else
+      timeout "${timeout_s}s" "${codex_argv[@]}" < "$infile" 2>&1
+    fi
+    return $?
+  fi
+  # No (or suppressed) GNU `timeout` -> manual bound.
+  local launcher="" outf pid winpid waited=0 rc=0
+  command -v setsid >/dev/null 2>&1 && launcher="setsid"
+  outf=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/do-integrity-out-$$.txt")
+  if [ -n "${INTEGRITY_CODEX_CMD:-}" ]; then
+    $launcher bash -c "$INTEGRITY_CODEX_CMD" < "$infile" > "$outf" 2>&1 &
+  else
+    $launcher "${codex_argv[@]}" < "$infile" > "$outf" 2>&1 &
+  fi
+  pid=$!
+  winpid=$(cat "/proc/$pid/winpid" 2>/dev/null || true)
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$timeout_s" ]; then
+      [ -z "$winpid" ] && winpid=$(cat "/proc/$pid/winpid" 2>/dev/null || true)
+      [ -n "$winpid" ] && taskkill //F //T //PID "$winpid" >/dev/null 2>&1
+      kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+      sleep 1
+      kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null
+      cat "$outf" 2>/dev/null; rm -f "$outf" 2>/dev/null || true
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid"; rc=$?
+  cat "$outf" 2>/dev/null; rm -f "$outf" 2>/dev/null || true
+  return $rc
+}
+out=$(run_codex "$in"); status=$?
 rm -f "$scrubbed" 2>/dev/null || true
 
 # 4. classify failure modes -> fallback.
