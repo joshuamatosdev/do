@@ -35,11 +35,21 @@
 #                              EDITS the repo by default. SECURITY: an external LLM
 #                              (Codex/OpenAI) writes directly to your files on every
 #                              call. Set to 0 to force read-only "Please advise."
+#         ASK_CODEX_BIN        override the Codex binary path (default: codex.cmd or
+#                              codex from PATH, else the Windows npm-global path)
 #         CLAUDE_CODE_SESSION_ID  set by the harness; locates the transcript
 
 set -uo pipefail
 
-CODEX="C:/Users/Joshua/AppData/Roaming/npm/codex.cmd"
+# Resolve the Codex binary: explicit override (ASK_CODEX_BIN) -> PATH -> the known
+# Windows npm-global path as a last-resort fallback. Keeps working on this host while
+# letting the bundled plugin skill run anywhere `codex` / `codex.cmd` is on PATH.
+CODEX="${ASK_CODEX_BIN:-}"
+if [ -z "$CODEX" ]; then
+  if command -v codex.cmd >/dev/null 2>&1; then CODEX="$(command -v codex.cmd)"
+  elif command -v codex >/dev/null 2>&1; then CODEX="$(command -v codex)"
+  else CODEX="C:/Users/Joshua/AppData/Roaming/npm/codex.cmd"; fi
+fi
 PROJECTS_DIR="${HOME}/.claude/projects"
 TAIL_BYTES=80000
 # Default lowered 600->300 (2026-06-15 owner opt): the Stop integrity-review uses 300s
@@ -66,7 +76,7 @@ CODEX_SERVICE_TIER="${ASK_CODEX_SERVICE_TIER:-priority}"
 
 # --- refusal: codex binary present? -----------------------------------------
 if [ ! -f "$CODEX" ]; then
-  echo "codex: Codex binary missing at $CODEX" >&2
+  echo "codex: Codex binary not found ($CODEX). Install codex or set ASK_CODEX_BIN." >&2
   exit 3
 fi
 # (No GNU `timeout` prerequisite: the firing path bounds itself via the manual
