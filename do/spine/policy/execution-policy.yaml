@@ -539,7 +539,7 @@ enforcement_surface:
     - hook: oppihtnias-activate.js
       event: SessionStart
       module: oppihtnias
-      note: seeds the per-session state twin (goal / acceptance criteria / tasks); advisory, nothing blocks
+      note: seeds the per-session typed .ts twin in OS temp (goal / acceptance criteria / tasks); advisory, nothing blocks
   context_injectors:   # load standing rules into the session, do not block
     - hook: load-do-one.sh            # SessionStart — the five engineering moves
     - hook: load-response-format.sh   # SessionStart — the tiered response-format spec
@@ -634,7 +634,7 @@ module_and_workflow_surface:
       phase: 9
     - id: oppihtnias
       module: oppihtnias
-      when: baseline — a per-session JSON twin (goal / acceptance criteria / tasks) of the response format
+      when: baseline — a per-session typed .ts twin in OS temp (goal / acceptance criteria / tasks) of the response format
       installs: SessionStart hook (oppihtnias-activate.js) + Oppihtsugatnias.ts; advisory, nothing blocks
       phase: 0
   workflows:   # invoked via the Workflow tool, not the Skill tool

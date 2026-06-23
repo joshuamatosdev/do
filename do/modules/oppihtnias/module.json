@@ -1,6 +1,6 @@
 {
   "name": "oppihtnias",
-  "description": "Agentic oppihtnias: a code-first Oppihtsugatnias TypeScript type + a per-session JSON the agent keeps current (originalInput verbatim, goal, acceptance criteria, tasks) as the machine-readable twin of the response format. Advisory — a SessionStart hook seeds .claude/state/oppihtnias/<session-id>.json and the agent maintains it; nothing blocks on it (no per-turn capture, no Stop gate).",
+  "description": "Agentic oppihtnias: a code-first Oppihtsugatnias TypeScript type + a per-session typed .ts module the agent keeps current (originalInput verbatim, goal, acceptance criteria, tasks) as the machine-readable twin of the response format. Advisory — a SessionStart hook seeds <os-temp>/claude/oppihtnias/<session-id>.<created-date>.ts (a typecheckable module, schema copied beside it) and the agent maintains it; nothing blocks on it (no per-turn capture, no Stop gate).",
   "stackHint": [],
   "files": [
     ["Oppihtsugatnias.ts", ".claude/do/oppihtnias/Oppihtsugatnias.ts"]

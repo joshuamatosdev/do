@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
+const { readFileSync, existsSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { tmpdir } = require("node:os");
@@ -34,42 +34,72 @@ function targetWithModules(modules) {
   return t;
 }
 
-function runHook(projectDir, sid) {
+// A controlled OS-temp base so the model's temp location is assertable (the hook uses os.tmpdir(),
+// which honors TMPDIR/TEMP/TMP — point all three at a fresh dir per run).
+function freshTmpBase() {
+  return mkdtempSync(join(tmpdir(), "do-mm-tmp-"));
+}
+function modelDir(tmpBase) {
+  return join(tmpBase, "claude", "oppihtnias");
+}
+function findModel(tmpBase, sid) {
+  const dir = modelDir(tmpBase);
+  if (!existsSync(dir)) return null;
+  const f = readdirSync(dir).find((n) => n.startsWith(`${sid}.`) && n.endsWith(".ts") && n !== "Oppihtsugatnias.ts");
+  return f ? join(dir, f) : null;
+}
+
+function runHook(projectDir, sid, tmpBase) {
   const env = { ...process.env, CLAUDE_PROJECT_DIR: projectDir };
+  if (tmpBase) { env.TMPDIR = tmpBase; env.TEMP = tmpBase; env.TMP = tmpBase; }
   if (sid === undefined) delete env.CLAUDE_CODE_SESSION_ID;
   else env.CLAUDE_CODE_SESSION_ID = sid;
   return execFileSync("node", [HOOK], { env, encoding: "utf8" });
 }
 
-test("hook seeds a per-session model where the module is installed", () => {
+test("hook seeds a per-session .ts model in the OS temp folder, stamped with session-id + date", () => {
   const t = targetWithModules(["oppihtnias"]);
-  const out = runHook(t, "sess-123");
-  const modelPath = join(t, ".claude", "state", "oppihtnias", "sess-123.json");
-  assert.ok(existsSync(modelPath), "model JSON seeded");
-  const m = JSON.parse(readFileSync(modelPath, "utf8"));
-  assert.equal(m.provenance.sessionId, "sess-123");
-  assert.equal(m.provenance.revision, 0);
-  assert.equal(m.provenance.schemaVersion, "3.0.0", "seeds the current schema version");
-  assert.equal(m.core.goal, "", "skeleton core present");
+  const tmp = freshTmpBase();
+  const out = runHook(t, "sess-123", tmp);
+
+  const modelPath = findModel(tmp, "sess-123");
+  assert.ok(modelPath, "a sess-123.<date>.ts model was seeded in temp");
+  assert.match(modelPath, /sess-123\.\d{4}-\d{2}-\d{2}\.ts$/, "filename carries session-id + creation date");
+
+  const src = readFileSync(modelPath, "utf8");
+  assert.match(src, /import type \{ Oppihtsugatnias \} from "\.\/Oppihtsugatnias"/, "imports the schema type");
+  assert.match(src, /export const model: Oppihtsugatnias =/, "exports a typed model (not JSON)");
+  assert.match(src, /parseId\(/, "IDs go through the branded constructor");
+  assert.ok(src.includes('sessionId: "sess-123"'), "stamps the session id");
+  assert.ok(src.includes('schemaVersion: "3.0.0"'), "seeds the current schema version");
+  assert.ok(src.includes("revision: 0"), "starts at revision 0");
+  assert.ok(src.includes('goal: ""'), "skeleton core present");
+
+  // schema copied beside the model so `./Oppihtsugatnias` resolves + type-checks standalone
+  assert.ok(existsSync(join(modelDir(tmp), "Oppihtsugatnias.ts")), "schema copy dropped beside the model");
+
   assert.ok(out.includes("OPPIHTNIAS active"), "announces to context");
+  assert.ok(out.includes(".ts"), "announce names the .ts model path");
 });
 
-test("hook does not overwrite an existing model (idempotent seed)", () => {
+test("hook does not overwrite an existing model (idempotent seed, keyed on session)", () => {
   const t = targetWithModules(["oppihtnias"]);
-  runHook(t, "sess-xyz");
-  const modelPath = join(t, ".claude", "state", "oppihtnias", "sess-xyz.json");
-  const edited = JSON.parse(readFileSync(modelPath, "utf8"));
-  edited.core.goal = "user-set goal";
-  writeFileSync(modelPath, JSON.stringify(edited));
-  runHook(t, "sess-xyz");
-  assert.equal(JSON.parse(readFileSync(modelPath, "utf8")).core.goal, "user-set goal", "existing model preserved");
+  const tmp = freshTmpBase();
+  runHook(t, "sess-xyz", tmp);
+  const modelPath = findModel(tmp, "sess-xyz");
+  assert.ok(modelPath, "seeded");
+  const edited = readFileSync(modelPath, "utf8").replace('goal: ""', 'goal: "user-set goal"');
+  writeFileSync(modelPath, edited);
+  runHook(t, "sess-xyz", tmp);
+  assert.ok(readFileSync(modelPath, "utf8").includes('goal: "user-set goal"'), "existing model preserved");
 });
 
 test("hook self-gates: no-op where the module is not installed", () => {
   const t = targetWithModules(["agent-team"]); // module absent
-  const out = runHook(t, "sess-123");
+  const tmp = freshTmpBase();
+  const out = runHook(t, "sess-123", tmp);
   assert.equal(out, "", "no output");
-  assert.equal(existsSync(join(t, ".claude", "state", "oppihtnias")), false, "nothing seeded");
+  assert.equal(findModel(tmp, "sess-123"), null, "nothing seeded");
 });
 
 // The "all agents use it" mechanism: install lands the directive in CLAUDE.md, which EVERY
@@ -81,7 +111,7 @@ test("install lands the inherited CLAUDE.md directive so subagents adopt the mod
   install({ target: t, modules: ["oppihtnias"] });
   const cm = readFileSync(join(t, "CLAUDE.md"), "utf8");
   assert.ok(cm.includes("DO-MODULE-CLAUDE:oppihtnias:BEGIN"), "module CLAUDE block present");
-  assert.ok(cm.includes(".claude/state/oppihtnias/"), "directive names the session model path");
+  assert.ok(cm.includes("oppihtnias/<session-id>"), "directive names the session model path pattern");
   assert.ok(cm.includes("Dispatch hand-off"), "directive carries the dispatch hand-off rule");
   // idempotent: a second install (e.g. update) does not duplicate the block
   install({ target: t, modules: ["oppihtnias"] });
@@ -117,4 +147,19 @@ test("schema 3.0.0 type-checks under strict flags", { skip: TSC ? false : "types
   const tsc = require.resolve("typescript/bin/tsc");
   execFileSync("node", [tsc, "--noEmit", "--strict", "--exactOptionalPropertyTypes",
     "--noUncheckedIndexedAccess", "--target", "es2020", join(MOD, "Oppihtsugatnias.ts")], { stdio: "pipe" });
+});
+
+// Deep guard: a freshly-seeded temp .ts model type-checks against its sibling schema copy under the
+// same strict flags — proves the "code first, it compiles" property of an actual instance, not just
+// the schema. Skips where typescript isn't installed locally (offline; never fetches).
+test("a seeded .ts model type-checks against the schema (instance, not just schema)",
+  { skip: TSC ? false : "typescript not installed" }, () => {
+  const t = targetWithModules(["oppihtnias"]);
+  const tmp = freshTmpBase();
+  runHook(t, "sess-tc", tmp);
+  const modelPath = findModel(tmp, "sess-tc");
+  assert.ok(modelPath, "seeded");
+  const tsc = require.resolve("typescript/bin/tsc");
+  execFileSync("node", [tsc, "--noEmit", "--strict", "--exactOptionalPropertyTypes",
+    "--noUncheckedIndexedAccess", "--target", "es2020", "--moduleResolution", "node", modelPath], { stdio: "pipe" });
 });

@@ -142,7 +142,7 @@ Modules are chosen at `/do:run setup` or added with
 | `git-gate` | PreToolUse (Bash\|PowerShell) default-deny git allowlist: blocks destructive / history-rewriting git (`reset --hard`, `checkout`, `switch`, `rebase`, `merge`, force-push, branch create/delete, `stash`, `--no-verify`/`--amend`); allows read-only + safe forms (add, commit, push non-force, fetch, pull). | `node` |
 | `task-router` | The `do-route` skill. | — |
 | `agent-team` | The `do-team` skill; enables the experimental agent-teams flag. | — |
-| `oppihtnias` | A per-session, machine-readable task state (goal, acceptance criteria, tasks). | — |
+| `oppihtnias` | A per-session, machine-readable task state (goal, acceptance criteria, tasks) as a typed `.ts` module in the OS temp folder. | — |
 
 ---
 
