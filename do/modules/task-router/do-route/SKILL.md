@@ -1,6 +1,6 @@
 ---
 name: do-route
-description: Reactive task router. Understand a task, classify its intent, then dispatch to the best-fit predefined do agent, a team (do-team engineering / red-blue security), or general-purpose — falling back to general-purpose only when no specialist fits. Dispatches plain subagents by default; upgrades to a live agent-team when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (set by the agent-team module, installed as a dependency). Use when you have a task but have not chosen who runs it, or when the ask is about speed, effort, or parallelism — "route this", "dispatch this", "which agent should handle this", "do this as fast as possible", "in parallel", "fan this out", "this is a really hard problem", "try as hard as possible to solve this", "give it everything / throw everything at it", "use a team if it helps", or "/do-route".
+description: Reactive task router. Understand a task, classify its intent, then dispatch to the best-fit predefined do agent, a team (do-team engineering / red-blue security), or general-purpose — falling back to general-purpose only when no specialist fits. Dispatches plain subagents by default; upgrades to a live agent-team when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (set by the agent-team module, installed as a dependency). Use when you have a task but have not chosen who runs it, or when the ask is about speed, effort, or parallelism — "route this", "dispatch this", "which agent should handle this", "do this as fast as possible", "in parallel", "fan this out", "this is a really hard problem", "max effort", "give it everything / throw everything at it", "use a team if it helps", or "/do-route".
 ---
 
 # do-route — reactive task router
@@ -25,7 +25,7 @@ mode of either. Those are *destinations* you can choose; they never call you. Pi
 3. **Route.** Map each intent → a handler. Decide cardinality: one agent, several in parallel, a team,
    or `general-purpose` fallback.
 4. **Dispatch.** Spawn via the Agent tool with a focused brief: the one-line done-condition + the
-   return contract (what to hand back). Subagents by default; a live team only if the flag is on AND
+   return contract (required output). Subagents by default; a live team only if the flag is on AND
    the parts benefit from teammates talking.
 5. **Synthesize.** Collect, dedup, reconcile. Adversarially verify any high-stakes output before you
    trust it — do not relay an unverified agent claim as fact.
@@ -66,7 +66,7 @@ Nothing above fits | `general-purpose`
   adversarial verify route (a skeptic / a refuting agent) before declaring done.
 - **Read the effort signal in the ask.** "as fast as possible" / "in parallel" / "fan this out" →
   decompose and dispatch concurrent agents (a live team if the flag is on), not one serial agent.
-  "this is really hard" / "try as hard as possible" / "throw everything at it" → route to the
+  "this is really hard" / "max effort" / "throw everything at it" → route to the
   strongest specialist(s), widen the fan-out, and add an adversarial verify pass — do not
   under-resource it. Both at once → parallel fan-out AND max effort with verification.
 - **Compute discipline.** Mechanical / enumerated edits (fixed `s/old/new/` over a known file set) →
@@ -92,4 +92,4 @@ State which is active at the start of a run:
 2. Every dispatch carries the one-line done-condition + an explicit return contract.
 3. Synthesize and verify high-stakes results before declaring done — never relay an unverified claim.
 4. Any security route is **authorized, local-only** — the same supreme law as `red-blue` and
-   `do:security-recon`. If authorization or scope is unclear, stop and say so.
+   `do:security-recon`. Halt only on missing authorization or scope; emit the exact `[USER]` authorization/scope requirement.

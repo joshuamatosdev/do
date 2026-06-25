@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // block-stub-write.sh is a PreToolUse(Edit|Write) gate: it must BLOCK a write whose decoded content
 // is a stub placeholder (exit 2) and ALLOW real code (exit 0). Claude Code sends the file content
@@ -26,13 +27,16 @@ const { tmpdir } = require("node:os");
 function hasBash() { try { execFileSync("bash", ["-c", "exit 0"], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = hasBash() ? false : "bash unavailable on this host";
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/"); // Git Bash takes drive-letter forward-slash paths
-const HOOK = fwd(join(ROOT, "do", "spine", "hooks", "block-stub-write.sh"));
+const HOOK = "do/spine/hooks/block-stub-write.sh";
 
 function runHook(input, projectDir) {
   try {
-    execFileSync("bash", [HOOK], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(projectDir) }, stdio: ["pipe", "pipe", "pipe"] });
+    execFileSync("bash", [HOOK], {
+      cwd: ROOT,
+      input,
+      env: bashEnv({ CLAUDE_PROJECT_DIR: bashPath(projectDir) }),
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     return { code: 0, stderr: "" };
   } catch (e) { return { code: e.status ?? 1, stderr: (e.stderr || "").toString() }; }
 }

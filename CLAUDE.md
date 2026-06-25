@@ -18,7 +18,7 @@ gates run on your sessions here. See **Gotchas**.
 - **Test (all):** `node --test "tests/*.test.js"` — the only npm script (`package.json:17`). Node ≥22 (`package.json:19`). ~37 test files under `tests/`.
 - **Test (one file):** `node --test tests/<name>.test.js`.
 - **No build and no lint step.** The Node core is plain JS with **zero npm dependencies**; the test suite is the gate.
-- **Hook runtime deps:** `bash` everywhere; `jq` for a few hooks (e.g. `codex-later`, `commit-doctor`); PowerShell on Windows. The Node core needs none of these.
+- **Hook runtime deps:** `bash` everywhere; `jq` for a few hooks (e.g. `codex-frontier`, `commit-doctor`); PowerShell on Windows. The Node core needs none of these.
 
 ## Architecture — the big picture
 
@@ -39,10 +39,10 @@ Know which surface you are touching before you edit — the blast radius is comp
 ### 2. Spine vs. modules
 - `do/spine/` = the always-on core: `CLAUDE.do.md`, `RESPONSE-FORMAT.md`, `ALWAYS-READ.md`,
   `capability-gate.md`, `one.md`, `policy/`, `settings.partial.json`, and `hooks/` — the gate
-  scripts (`validate-response-format.sh`, `validate-continuation.sh`, `block-stub-write.sh`,
+  scripts (`validate-continuation.sh`, `block-stub-write.sh`,
   `docs-compliance-check.sh`) plus the `load-*` session-start loaders.
 - `do/modules/` = 9 **opt-in**, self-contained modules: `completion-gates`, `memory-discipline`,
-  `codex-integrity`, `codex-later`, `commit-doctor`, `git-gate`, `task-router`, `agent-team`,
+  `codex-integrity`, `codex-frontier`, `commit-doctor`, `git-gate`, `task-router`, `agent-team`,
   `oppihtnias`. Each ships its own hooks/skills and is enabled at setup or via `/do:run add <module>`.
 
 ### 3. Self-gating

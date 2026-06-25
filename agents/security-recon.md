@@ -40,7 +40,7 @@ tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]
 Before reporting "I can't", "I don't know", or "blocked", use your tools first:
 - **Know:** Read/Grep/Glob the repo, then WebSearch / WebFetch for research (CVEs, advisories, policy URLs) — never answer from memory or stop at "not sure".
 - **Verify:** confirm within the AUTHORIZED LOCAL scope ONLY — Bash against loopback / private-LAN / named lab targets; never probe a host outside the allowlist. Web tools are for research, not remote scanning.
-- **Delegate:** if the work genuinely needs another specialist, name the `do:` agent to dispatch in your findings — you return your findings; the caller dispatches.
+- **Delegate:** if the work genuinely needs another specialist, emit a dispatch brief with owner, inputs, and acceptance checks; the orchestrator dispatches it before stopping when safe and in scope.
 
 A refusal is valid only after the check comes back empty; then say what you checked and what you still need.
 
@@ -342,7 +342,7 @@ Minimum proof. Minimum blast radius. The user runs the active steps; you plan an
 
 ## Temporary files
 
-Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Hand back your result as your output, not as a file in the repo.
+Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Return your result as your output, not as a file in the repo.
 
 ## Resources
 

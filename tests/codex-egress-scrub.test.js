@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // Regression coverage for the codex-integrity egress hardening:
 //   (1) turn text is secret-scrubbed BEFORE it is piped to the external codex CLI,
@@ -13,12 +14,10 @@ const { tmpdir } = require("node:os");
 // These would all FAIL against the pre-fix scripts (raw packet piped to codex, dangerous flag,
 // no disclosure) and PASS against the hardened ones.
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/");
 const MODDIR = join(ROOT, "do", "modules", "codex-integrity");
-const RUNNER = fwd(join(MODDIR, "run-integrity.sh"));
-const HOOK = fwd(join(MODDIR, "hooks", "codex-adversarial-review.sh"));
-const HOOK_SRC = join(MODDIR, "hooks", "codex-adversarial-review.sh");
+const RUNNER = bashPath(join(MODDIR, "run-integrity.sh"));
+const HOOK = bashPath(join(MODDIR, "hooks", "codex-stop.sh"));
+const HOOK_SRC = join(MODDIR, "hooks", "codex-stop.sh");
 
 function has(bin) { try { execFileSync("bash", ["-lc", "command -v " + bin], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : (!has("jq") ? "jq unavailable" : (!has("node") ? "node unavailable" : false));
@@ -39,8 +38,8 @@ test("run-integrity scrubs the packet before piping it to codex", { skip: SKIP }
   const pkt = join(dir, "packet.txt");
   const cap = join(dir, "captured-stdin.txt");
   writeFileSync(pkt, `review this turn. leaked key: ${SECRET}\n`);
-  const out = execFileSync("bash", ["-c", `bash '${RUNNER}' '${fwd(pkt)}' 2>&1`], {
-    env: { ...process.env, INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) },
+  const out = execFileSync("bash", [RUNNER, bashPath(pkt)], {
+    env: bashEnv({ INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) }),
     encoding: "utf8",
   });
   assert.match(out, /SOURCE: codex/, "codex path taken");
@@ -55,8 +54,8 @@ test("run-integrity is fail-closed: a broken scrubber sends NOTHING to codex", {
   const pkt = join(dir, "packet.txt");
   const cap = join(dir, "captured-stdin.txt");
   writeFileSync(pkt, `secret ${SECRET} in the packet\n`);
-  const out = execFileSync("bash", ["-c", `bash '${RUNNER}' '${fwd(pkt)}' 2>&1`], {
-    env: { ...process.env, DO_SCRUB_CMD: "exit 1", INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) },
+  const out = execFileSync("bash", [RUNNER, bashPath(pkt)], {
+    env: bashEnv({ DO_SCRUB_CMD: "exit 1", INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) }),
     encoding: "utf8",
   });
   assert.match(out, /SOURCE: change-skeptic/, "routes to the in-session fallback");
@@ -70,8 +69,8 @@ test("run-integrity is fail-closed: a no-op scrubber (empty output) does not egr
   const cap = join(dir, "captured-stdin.txt");
   writeFileSync(pkt, `secret ${SECRET} that must not leak\n`);
   // `true` exits 0 but prints nothing -> a non-empty packet scrubbing to empty == scrubber not wired.
-  const out = execFileSync("bash", ["-c", `bash '${RUNNER}' '${fwd(pkt)}' 2>&1`], {
-    env: { ...process.env, DO_SCRUB_CMD: "true", INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) },
+  const out = execFileSync("bash", [RUNNER, bashPath(pkt)], {
+    env: bashEnv({ DO_SCRUB_CMD: "true", INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) }),
     encoding: "utf8",
   });
   assert.match(out, /SOURCE: change-skeptic/, "no-output scrubber -> fallback");
@@ -84,8 +83,8 @@ test("run-integrity default scrubber resolves the real lib/do-mon-context.js --s
   const pkt = join(dir, "packet.txt");
   const cap = join(dir, "captured-stdin.txt");
   writeFileSync(pkt, `default-path secret ${SECRET}\n`);
-  const out = execFileSync("bash", ["-c", `bash '${RUNNER}' '${fwd(pkt)}' 2>&1`], {
-    env: { ...process.env, INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) },
+  const out = execFileSync("bash", [RUNNER, bashPath(pkt)], {
+    env: bashEnv({ INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) }),
     encoding: "utf8",
   });
   assert.match(out, /SOURCE: codex/);
@@ -96,31 +95,39 @@ test("run-integrity default scrubber resolves the real lib/do-mon-context.js --s
 test("run-integrity passes INTEGRITY_CODEX_ARGV as LITERAL argv (no shell injection)", { skip: SKIP }, () => {
   // Drop a fake `codex` that records its argv, then drive run-integrity through the default
   // (no INTEGRITY_CODEX_CMD) argv path with a metacharacter-laden arg. The arg must arrive verbatim
-  // -- proving it is passed as a literal argument and never re-parsed by a shell. Fixture files are
-  // written with node (no shell-escaping pitfalls); the bin dir is mapped to an MSYS path with
-  // `cygpath -u` so bash `command -v` resolves the fake codex (Windows C:/ PATH entries do not).
+  // -- proving it is passed as a literal argument and never re-parsed by a shell. Fixture files and
+  // the launcher script are written with node so test setup does not depend on nested shell quoting.
   const dir = mkdtempSync(join(tmpdir(), "do-argv-"));
   const bin = join(dir, "bin");
   mkdirSync(bin, { recursive: true });
-  const argCap = fwd(join(dir, "argv.txt"));
+  const argCap = bashPath(join(dir, "argv.txt"));
   const sentinelName = "pwned_no_eval";
   const sentinel = join(dir, sentinelName);
   // Fake codex: append each arg on its own line to ARGCAP, drain stdin, emit a valid DECISION.
   writeFileSync(join(bin, "codex"),
     '#!/bin/sh\nfor a in "$@"; do printf \'%s\\n\' "$a" >> "$ARGCAP"; done\ncat >/dev/null\nprintf \'DECISION: ALLOW\\n\'\n');
-  const pkt = fwd(join(dir, "packet.txt"));
+  const pkt = bashPath(join(dir, "packet.txt"));
   writeFileSync(join(dir, "packet.txt"), "review this\n");
   // A -C arg carrying a command substitution: if any shell ever re-parses it, the sentinel appears.
-  const evil = `$(touch "${fwd(sentinel)}")`;
+  const evil = `$(touch ${bashPath(sentinel)})`;
   const argv = ["exec", "--sandbox", "read-only", "-C", evil, "-"].join("\n");
-  const script =
-    `BIN=$(cygpath -u '${fwd(bin)}' 2>/dev/null || echo '${fwd(bin)}');` +
-    ' chmod +x "$BIN/codex";' +
-    ` export ARGCAP='${argCap}';` +
-    ' ND=$(dirname "$(command -v node)");' +
-    ` PATH="$BIN:$ND:/usr/bin:/bin" bash '${RUNNER}' '${pkt}' 2>&1`;
-  const out = execFileSync("bash", ["-c", script], {
-    env: { ...process.env, INTEGRITY_CODEX_ARGV: argv },
+  const launcher = join(dir, "run-argv.sh");
+  writeFileSync(launcher, [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    `chmod +x '${bashPath(join(bin, "codex"))}'`,
+    `export ARGCAP='${argCap}'`,
+    'ND=$(dirname "$(command -v node)")',
+    `export PATH='${bashPath(bin)}':"$ND:/usr/bin:/bin"`,
+    "export INTEGRITY_CODEX_ARGV=$(cat <<'DO_ARGV'",
+    argv,
+    "DO_ARGV",
+    ")",
+    `exec bash '${RUNNER}' '${pkt}'`,
+    "",
+  ].join("\n"));
+  const out = execFileSync("bash", [bashPath(launcher)], {
+    env: bashEnv(),
     encoding: "utf8",
   });
   assert.match(out, /SOURCE: codex/, "default argv codex path taken");
@@ -132,7 +139,7 @@ test("run-integrity passes INTEGRITY_CODEX_ARGV as LITERAL argv (no shell inject
   assert.match(args, /read-only/);
 });
 
-// ---- codex-adversarial-review.sh : Stop hook (defense in depth) --------------------------------
+// ---- codex-stop.sh : Stop hook (defense in depth) --------------------------------
 
 // Build a fresh config dir (no flag -> adversarial ON by default) + a project with the module
 // recorded, plus a non-trivial transcript whose assistant text carries a secret.
@@ -141,7 +148,7 @@ function hookEnv(extra = {}) {
   const proj = mkdtempSync(join(tmpdir(), "do-proj-"));
   mkdirSync(join(proj, ".claude"), { recursive: true });
   writeFileSync(join(proj, ".claude", "do.manifest.json"), JSON.stringify({ version: "0", modules: ["codex-integrity"] }));
-  return { ...process.env, CLAUDE_CONFIG_DIR: fwd(cfg), CLAUDE_PROJECT_DIR: fwd(proj), ...extra };
+  return bashEnv({ CLAUDE_CONFIG_DIR: bashPath(cfg), CLAUDE_PROJECT_DIR: bashPath(proj), ...extra });
 }
 function secretTranscript() {
   const dir = mkdtempSync(join(tmpdir(), "do-tx-"));
@@ -153,13 +160,13 @@ function secretTranscript() {
   ];
   const f = join(dir, "t.jsonl");
   writeFileSync(f, lines.join("\n") + "\n");
-  return fwd(f);
+  return bashPath(f);
 }
 
 test("adversarial hook scrubs the turn text before it reaches codex", { skip: SKIP }, () => {
   const dir = mkdtempSync(join(tmpdir(), "do-egress-"));
   const cap = join(dir, "captured-stdin.txt");
-  const env = hookEnv({ INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) });
+  const env = hookEnv({ INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) });
   const input = JSON.stringify({ transcript_path: secretTranscript(), stop_hook_active: false });
   execFileSync("bash", [HOOK], { input, env, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
   assert.ok(existsSync(cap), "codex received a payload");
@@ -171,7 +178,7 @@ test("adversarial hook scrubs the turn text before it reaches codex", { skip: SK
 test("adversarial hook is fail-closed: broken scrubber -> no codex egress", { skip: SKIP }, () => {
   const dir = mkdtempSync(join(tmpdir(), "do-egress-"));
   const cap = join(dir, "captured-stdin.txt");
-  const env = hookEnv({ DO_SCRUB_CMD: "exit 1", INTEGRITY_CODEX_CMD: captureCodexCmd(fwd(cap)) });
+  const env = hookEnv({ DO_SCRUB_CMD: "exit 1", INTEGRITY_CODEX_CMD: captureCodexCmd(bashPath(cap)) });
   const input = JSON.stringify({ transcript_path: secretTranscript(), stop_hook_active: false });
   const out = execFileSync("bash", [HOOK], { input, env, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
   assert.ok(!String(out).includes('"block"'), "fail-open on availability: never hard-blocks");
@@ -182,7 +189,7 @@ test("adversarial hook is fail-closed: broken scrubber -> no codex egress", { sk
 
 const RUNNER_SRC = join(MODDIR, "run-integrity.sh");
 
-test("codex-adversarial-review.sh no longer uses the dangerous bypass flag and runs read-only", () => {
+test("codex-stop.sh no longer uses the dangerous bypass flag and runs read-only", () => {
   const src = readFileSync(HOOK_SRC, "utf8");
   assert.ok(!src.includes("dangerously-bypass") || /former --dangerously-bypass/.test(src),
     "dangerous bypass flag not used (only referenced in the historical comment)");
@@ -195,7 +202,7 @@ test("codex-adversarial-review.sh no longer uses the dangerous bypass flag and r
     "codex runs with a read-only sandbox");
 });
 
-test("codex-adversarial-review.sh does not interpolate the project dir into a bash -c shell string", () => {
+test("codex-stop.sh does not interpolate the project dir into a bash -c shell string", () => {
   const src = readFileSync(HOOK_SRC, "utf8");
   // The pre-fix form baked $proj into an INTEGRITY_CODEX_CMD shell string later run via `bash -c`.
   // The hardened form passes args via INTEGRITY_CODEX_ARGV (literal argv elements), so $proj is

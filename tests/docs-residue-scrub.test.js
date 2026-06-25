@@ -3,7 +3,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { readdirSync, readFileSync, statSync } = require("node:fs");
+const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const { join, extname } = require("node:path");
 
 const DOCS_DIR = join(__dirname, "..", "docs");
@@ -21,7 +21,7 @@ function collectMd(dir, acc = []) {
   return acc;
 }
 
-const FILES = collectMd(DOCS_DIR);
+const FILES = existsSync(DOCS_DIR) ? collectMd(DOCS_DIR) : [];
 
 function allText() {
   return FILES.map((f) => readFileSync(f, "utf8")).join("\n");

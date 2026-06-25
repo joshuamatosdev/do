@@ -282,7 +282,7 @@ phases:
     rule: >-
       It compiled is not verification. The test went green is. The page
       rendered as expected is. Done must be earned. "Can't log in" is not a
-      verification dead-end — try E2E / Playwright / a local probe first.
+      verification dead-end — run E2E / Playwright / a local probe before escalating.
 
   # ---------------------------------------------------------------------------
   - id: 7
@@ -457,6 +457,18 @@ anti_patterns:
   - phase: 5
     pattern: Fixing a bug before a failing user-level test reproduces it
     why: No red-first proof — the fix may target the wrong cause and leaves no regression guard; dispatch do:test-engineer (E2E-closest tier) first
+  - phase: 5
+    pattern: Silent capability-drop — replacing a computed value with a sentinel (UNKNOWN / N-A /
+      null / empty) because its source (projection / metric / schema / read-model) is missing, then
+      presenting it as a finished fix
+    why: A missing source is an untried implementation route, not an empty capability; build the
+      source or mark the delivery NOT COMPLETE with a grounded gap record (DO-CAP-001, advisory)
+  - phase: 5
+    pattern: Agent-created flip gate handoff — calling a feature complete, then asking the user
+      whether to build rollout / freshness / backfill / least-privilege role work later
+    why: If the prerequisite is needed for the requested feature to work coherently, it is frontier
+      work; finish it now or mark the feature incomplete. Only true irreversible or outward-facing
+      choices get [USER].
   - phase: 6
     pattern: It compiled treated as done
     why: Not verification
@@ -511,13 +523,10 @@ enforcement_surface:
       event: PreToolUse
       matcher: 'Edit|Write|MultiEdit'
       enforces: first governed edit per session is blocked until grounded-docs / spec compliance is verified (@docscheck)
-    - hook: validate-response-format.sh
-      event: Stop
-      enforces: the turn carries its tier's required section headers (TRIVIAL / LITE / REPORT / FULL)
     - hook: validate-continuation.sh
       event: Stop
       enforces: no hand-back of actionable work, no passive close, no claimed blocker, no end-on-question (act-and-finish)
-    - hook: codex-integrity-review.sh + codex-adversarial-review.sh
+    - hook: codex-stop.sh
       event: Stop
       module: codex-integrity
       enforces: end-of-turn Codex integrity + adversarial review; blocks on a DECISION:BLOCK finding
@@ -526,25 +535,32 @@ enforcement_surface:
     - hook: protect-user-work.sh
       event: PreToolUse
       matcher: 'Edit|Write|MultiEdit'
-      note: advisory guard on user-owned files (non-blocking MVP)
+      note: logs user-owned write intent; does not block
     - hook: commit-doctor.sh
       event: PostToolUse
       matcher: Bash
       module: commit-doctor
       note: on a FAILED git commit, dispatches do:commit to heal it (never --no-verify); 3 retries then incident log
-    - hook: codex-later-stop.sh
+    - hook: codex-stop.sh
       event: Stop
-      module: codex-later
-      note: drains open non-[USER] frontier items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_LATER_OFF=1
+      module: codex-frontier
+      note: drains open non-[USER] frontier items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_FRONTIER_OFF=1
     - hook: oppihtnias-activate.js
       event: SessionStart
       module: oppihtnias
       note: seeds the per-session typed .ts twin in OS temp (goal / acceptance criteria / tasks); advisory, nothing blocks
+    - hook: validate-capability-preservation.sh
+      event: Stop
+      enforces: ADVISORY (DO-CAP-001) — warns when a turn introduces a silent capability-drop (a
+        system-absence sentinel in a value-producing path presented as complete). Rollout mode:
+        advisory; enforce by emitting decision:block.
+    - hook: snapshot-capability-candidates.sh
+      event: UserPromptSubmit
+      note: records pre-turn capability-drop fingerprints to OS temp so the Stop advisory flags only
+        candidates introduced this turn (never blames a pre-existing dirty sentinel)
   context_injectors:   # load standing rules into the session, do not block
     - hook: load-do-one.sh            # SessionStart — the five engineering moves
-    - hook: load-response-format.sh   # SessionStart — the tiered response-format spec
     - hook: load-capability-gate.sh   # SessionStart — the capability check (3 routes before "I can't")
-    - hook: inject-response-format.sh # UserPromptSubmit — re-states tier floors + act-and-finish each turn (survives compaction)
     - hook: do-compress-activate.js + do-compress-tracker.js   # do:compress session mode (SessionStart / UserPromptSubmit)
     - hook: do-mon-activate.js + do-mon-tracker.js             # do:mon session mode (SessionStart / UserPromptSubmit)
 
@@ -601,14 +617,14 @@ module_and_workflow_surface:
     - id: codex-integrity
       module: codex-integrity
       when: every non-trivial turn — end-of-turn Codex adversarial integrity review (ON by default)
-      installs: Stop hooks (codex-integrity-review.sh, codex-adversarial-review.sh); needs the codex CLI
+      installs: Stop hook (codex-stop.sh); needs the codex CLI
       fail_open: degrades to a do:change-skeptic advisory if codex is absent/errors; toggle via /do:run codex off
       egress: sends secret-scrubbed turn text to an external LLM (codex / OpenAI); codex runs read-only
       phase: 7
-    - id: codex-later
-      module: codex-later
+    - id: codex-frontier
+      module: codex-frontier
       when: a turn left open non-[USER] frontier items, OR changed code governed by a registered ADR / grounded-docs spec
-      installs: Stop hook (codex-later-stop.sh); needs jq + codex
+      installs: Stop hook (codex-stop.sh); needs jq + codex
       does: drains safe/relevant/tool-executable frontier items; aligns changed code to its ADR/spec (@docscheck); fail-open
       phase: 9
     - id: commit-doctor

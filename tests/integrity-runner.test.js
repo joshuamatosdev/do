@@ -2,17 +2,23 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const { execFileSync } = require("node:child_process");
 const { join } = require("node:path");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // run-integrity.sh performs an integrity review with AUTOMATIC fallback: try codex; on absent /
 // non-zero exit / timeout / no-DECISION, emit a SOURCE: change-skeptic directive instead. Tests
 // drive each path with a fake INTEGRITY_CODEX_CMD. bash found via inherited env; skipped if absent.
 function has(bin) { try { execFileSync("bash", ["-lc", "command -v " + bin], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : false;
-const RUNNER = join(__dirname, "..", "do", "modules", "codex-integrity", "run-integrity.sh").split(String.fromCharCode(92)).join("/");
+const RUNNER = bashPath(join(ROOT, "do", "modules", "codex-integrity", "run-integrity.sh"));
 
 function run(cmd, timeout, extraEnv) {
-  return execFileSync("bash", ["-c", "bash '" + RUNNER + "' 2>&1"], {
-    env: { ...process.env, INTEGRITY_CODEX_CMD: cmd, INTEGRITY_CODEX_TIMEOUT: String(timeout || 300), ...(extraEnv || {}) },
+  const env = {
+    INTEGRITY_CODEX_CMD: cmd,
+    INTEGRITY_CODEX_TIMEOUT: String(timeout || 300),
+    ...(extraEnv || {}),
+  };
+  return execFileSync("bash", [RUNNER], {
+    env: bashEnv(env),
     encoding: "utf8",
   });
 }

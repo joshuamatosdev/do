@@ -57,7 +57,7 @@ What the script does for you (so you don't re-do or second-guess it):
 
 - Light-scrubs common secret shapes (AWS/OpenAI/GitHub/Google keys, Bearer/JWT, PEM blocks, `private_key`/`client_secret`/`password` JSON) before sending.
 
-- Sends Codex ONLY the context followed by the CLOSER line — the verbatim question (if any), the most-recent user message, and the raw transcript, then the closer. By DEFAULT the closer is the empowered "Distinguished Engineer" text and Codex runs `workspace-write` (it may EDIT); `ASK_CODEX_ALLOW_EDITS=0` restores the read-only `Please advise.` closer. No preamble, no headers, no "independent reasoner" priming, no output format. The transcript is neutral by construction; Codex forms its own view from it.
+- Sends Codex ONLY the context followed by the CLOSER line — the verbatim question (if any), the most-recent user message, and the raw transcript, then the closer. By DEFAULT the closer is the empowered "Distinguished Engineer" text and Codex runs with workspace-write; `ASK_CODEX_ALLOW_EDITS=0` restores the read-only `Please advise.` closer. No preamble, no headers, no "independent reasoner" priming, no output format. The transcript is neutral by construction; Codex forms its own view from it.
 
 - Fires `codex.cmd exec --dangerously-bypass-approvals-and-sandbox -s read-only -C <workspace> -` under a default 300s timeout (`ASK_CODEX_TIMEOUT=<positive integer seconds>` overrides; non-numeric/duration like `5m` rejected → 300), with reconnect fail-fast and a winpid process-tree reap so a timeout never orphans the native `codex.exe`; tees the response to `.claude/state/codex-asks/ask-<session-name>-<session-id>-<ts>.log`.
 
@@ -105,7 +105,7 @@ Codex's response is **advisory input, not a command.** Weigh it; do not treat it
 
 - Summarizing Codex's response. The user wants Codex's words.
 
-- Treating Codex's *response* as binding — by DEFAULT Codex may EDIT the repo, but its reasoning/answer still comes back to the calling session as advice to weigh, not a command Claude executes blindly. (Use `ASK_CODEX_ALLOW_EDITS=0` for advise-only with no edits.)
+- Treating Codex's *response* as binding — by DEFAULT Codex runs with workspace-write, but its reasoning/answer still comes back to the calling session as advice to weigh, not a command Claude executes blindly. (Use `ASK_CODEX_ALLOW_EDITS=0` for advise-only with no edits.)
 
 - Firing Codex on a question the user can answer with one grep — orient first, fire only when the consult adds value.
 

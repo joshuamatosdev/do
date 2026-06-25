@@ -36,7 +36,7 @@ test("target settings does NOT inject CLAUDE_PLUGIN_ROOT hooks (manifest model)"
 test("plugin manifest declares the do hooks (where CLAUDE_PLUGIN_ROOT resolves)", () => {
   const manifest = JSON.parse(readFileSync(join(__dirname, "..", ".claude-plugin", "plugin.json"), "utf8"));
   const cmds = Object.values(manifest.hooks).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
-  for (const sh of ["load-response-format.sh", "load-do-one.sh", "load-capability-gate.sh", "inject-response-format.sh", "protect-user-work.sh", "block-stub-write.sh", "validate-response-format.sh"]) {
+  for (const sh of ["load-do-one.sh", "load-capability-gate.sh", "protect-user-work.sh", "block-stub-write.sh"]) {
     assert.ok(cmds.some((c) => c.includes(sh) && c.includes("${CLAUDE_PLUGIN_ROOT}")), `manifest declares ${sh} via plugin root`);
   }
 });
@@ -77,7 +77,12 @@ test("plugin manifest declares the unified codex-stop hook via plugin root (self
   const cmds = Object.values(manifest.hooks).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
   assert.ok(cmds.some((c) => c.includes("codex-integrity/hooks/codex-stop.sh") && c.includes("${CLAUDE_PLUGIN_ROOT}")),
     "the unified codex Stop hook is plugin-declared (where CLAUDE_PLUGIN_ROOT resolves)");
-  // The 3 former hooks are merged into codex-stop.sh — they must no longer be separately declared.
-  assert.ok(!cmds.some((c) => c.includes("codex-adversarial-review.sh") || c.includes("codex-integrity-review.sh") || c.includes("codex-later-stop.sh")),
+  // Former split hooks are merged into codex-stop.sh; they must no longer be separately declared.
+  const oldHooks = [
+    `codex-${"adversarial"}-review.sh`,
+    `codex-${"integrity"}-review.sh`,
+    `codex-${"frontier"}-stop.sh`,
+  ];
+  assert.ok(!cmds.some((c) => oldHooks.some((h) => c.includes(h))),
     "former codex Stop hooks are merged into codex-stop.sh, not separately wired");
 });

@@ -1,9 +1,10 @@
 const { test, after } = require("node:test");
 const assert = require("node:assert");
-const { mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
+const { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, existsSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 const { execFileSync } = require("node:child_process");
+const ROOT = join(__dirname, "..");
 
 function fakePlugin(modules) {
   const root = mkdtempSync(join(tmpdir(), "do-mods-"));
@@ -58,4 +59,35 @@ test("--check-deps reports PATH status and flags a missing external dep", () => 
   assert.equal(x.externalDeps.find((d) => d.dep === "node").onPath, true, "node resolves on PATH");
   assert.ok(r.missing.some((m) => m.dep === "definitely-not-a-real-cmd-xyz" && m.module === "x"),
     "the bogus dep is flagged missing with its module");
+});
+
+test("frontier module is fix-forward only with no legacy module name", () => {
+  const current = "codex-frontier";
+  const legacy = ["codex", "later"].join("-");
+  assert.ok(existsSync(join(ROOT, "do", "modules", current, "module.json")), "frontier module exists");
+  assert.equal(existsSync(join(ROOT, "do", "modules", legacy)), false, "legacy module directory removed");
+
+  const roots = [
+    ".claude-plugin",
+    "agents",
+    "do",
+    "lib",
+    "skills",
+    "README.md",
+    "CLAUDE.md",
+  ];
+  const offenders = [];
+  function scan(p) {
+    const full = join(ROOT, p);
+    if (!existsSync(full)) return;
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      for (const child of readdirSync(full)) scan(join(p, child));
+      return;
+    }
+    const text = readFileSync(full, "utf8");
+    if (text.includes(legacy)) offenders.push(p);
+  }
+  roots.forEach(scan);
+  assert.deepEqual(offenders, [], `legacy frontier name remains in: ${offenders.join(", ")}`);
 });

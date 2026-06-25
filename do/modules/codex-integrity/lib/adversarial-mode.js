@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // codex-integrity adversarial mode: a global on/off flag (mirrors do:mon's flag pattern).
-// When ON, the Stop hook codex-adversarial-review.sh auto-runs Codex to adversarially review
+// When ON, codex-stop.sh auto-runs Codex to adversarially review
 // the turn and BLOCKS on anything flagged. ON by default (opt-out): adversarial review runs
 // unless the flag file explicitly says "off". The per-project manifest self-gate in the hook
 // means the flag only acts where codex-integrity is installed, and the hook fails OPEN when the

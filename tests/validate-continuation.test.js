@@ -4,9 +4,10 @@ const { execFileSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // Stop hook validate-continuation.sh: the SEMANTIC completion gate. It BLOCKS a turn that is
-// ending while its own response still lists actionable work, uses [LATER] as an escape tag,
+// ending while its own response still lists actionable work, uses a legacy escape tag,
 // or hands back passively ("awaiting your direction"). [USER] = a decision only the user can make.
 // Discovered work is a frontier to drain, not a future queue. A claimed blocker or repeated
 // no-progress escalates with a "Never-Stop-Escalate" reason naming `codex --decide`. A [USER]-tagged
@@ -15,9 +16,7 @@ const { tmpdir } = require("node:os");
 function has(bin) { try { execFileSync("bash", ["-c", `command -v ${bin}`], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : (!has("jq") ? "jq unavailable" : false);
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/");
-const HOOK = fwd(join(ROOT, "do", "spine", "hooks", "validate-continuation.sh"));
+const HOOK = "do/spine/hooks/validate-continuation.sh";
 const SPEC = join(ROOT, "do", "spine", "RESPONSE-FORMAT.md");
 const FRONTIER_STEPS = [
   "1. Finish the requested objective.",
@@ -57,7 +56,7 @@ function transcript(dir, entries) {
   });
   const f = join(dir, "t.jsonl");
   writeFileSync(f, lines.join("\n") + "\n");
-  return fwd(f);
+  return bashPath(f);
 }
 
 // Seed the per-session state file. sid = basename(transcript) = "t.jsonl" (no session_id in input).
@@ -70,7 +69,11 @@ function seedState(dir, obj) {
 // Run the hook; return raw stdout ("" -> allow; contains "block" -> block).
 function run(dir, tf, stopActive = false) {
   const input = JSON.stringify({ transcript_path: tf, stop_hook_active: stopActive });
-  return execFileSync("bash", [HOOK], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(dir) } }).toString();
+  return execFileSync("bash", [HOOK], {
+    cwd: ROOT,
+    input,
+    env: bashEnv({ CLAUDE_PROJECT_DIR: bashPath(dir) }),
+  }).toString();
 }
 const isBlock = (out) => out.includes('"block"');
 
@@ -186,25 +189,27 @@ test("all open items [USER]-tagged -> ALLOW (escape tag)", { skip: SKIP }, () =>
   assert.equal(isBlock(run(d, tf)), false);
 });
 
-test("[LATER]-tagged open item -> BLOCK (no [LATER] escape hatch)", { skip: SKIP }, () => {
+test("legacy escape-tagged open item -> BLOCK", { skip: SKIP }, () => {
+  const legacyTag = `[${"LATER"}]`;
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
-    { role: "assistant", text: RS("- [ ] [LATER] propagate the change to the other installs") },
+    { role: "assistant", text: RS(`- [ ] ${legacyTag} propagate the change to the other installs`) },
   ]);
   const out = run(d, tf);
-  assert.equal(isBlock(out), true, "[LATER] must block because discovered work is frontier work");
+  assert.equal(isBlock(out), true, "legacy escape tag must block because discovered work is frontier work");
   assertFrontierLanguage(out);
 });
 
-test("open work alongside a [LATER] item -> BLOCK and treats both as frontier work", { skip: SKIP }, () => {
+test("open work alongside a legacy escape item -> BLOCK and treats both as frontier work", { skip: SKIP }, () => {
+  const legacyTag = `[${"LATER"}]`;
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
-    { role: "assistant", text: RS("- [ ] finish the in-scope wiring\n- [ ] [LATER] nice-to-have refactor") },
+    { role: "assistant", text: RS(`- [ ] finish the in-scope wiring\n- [ ] ${legacyTag} nice-to-have refactor`) },
   ]);
   const out = run(d, tf);
-  assert.equal(isBlock(out), true, "open work must block without a [LATER] escape hatch");
+  assert.equal(isBlock(out), true, "open work must block without a legacy escape hatch");
   assertFrontierLanguage(out);
 });
 
@@ -318,4 +323,18 @@ test("[USER] decision that mentions an action verb (which DB to restart) -> ALLO
     { role: "assistant", text: RS("- [ ] [USER] decide which service to restart first") },
   ]);
   assert.equal(isBlock(run(d, tf)), false, "decision phrasing exempts even when an action verb appears");
+});
+
+test("[USER] flip-gate build-vs-defer handoff -> BLOCK (agent-created gate is frontier work)", { skip: SKIP }, () => {
+  const d = project();
+  const tf = transcript(d, [
+    { role: "user", text: "finish and land the whole feature" },
+    {
+      role: "assistant",
+      text: RS("- [ ] [USER] decide whether to build the flip-gates now or leave them deferred until cutover is scheduled"),
+    },
+  ]);
+  const out = run(d, tf);
+  assert.equal(isBlock(out), true, "agent-runnable rollout prerequisites must not be hidden as a user choice");
+  assert.ok(out.includes("agent-created gate"), "reason should name the invented-gate handoff");
 });

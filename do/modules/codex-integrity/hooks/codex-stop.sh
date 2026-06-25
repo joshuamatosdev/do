@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# codex-stop.sh — unified Codex Stop hook. ONE Stop registration replacing three former hooks
-# (codex-adversarial-review.sh + codex-integrity-review.sh + codex-later-stop.sh). Each concern
-# self-gates on its OWN module, so codex-integrity and codex-later stay independently installable:
+# codex-stop.sh — unified Codex Stop hook. ONE Stop registration replacing the former split hooks.
+# Each concern
+# self-gates on its OWN module, so codex-integrity and codex-frontier stay independently installable:
 #
 #   A. codex-integrity (module: codex-integrity)
 #        - adversarial mode (default ON): run Codex adversarially over the turn, BLOCK on anything
 #          flagged. Codex unavailable / scrub-fail -> stderr advisory naming do:change-skeptic.
 #        - advisory mode (flag "off"):     emit a stderr reminder to run the review (no Codex call).
-#   B. codex-later (module: codex-later)
+#   B. codex-frontier (module: codex-frontier)
 #        - discovered frontier + ADR/spec alignment -> BLOCK with a directive to consult Codex.
 #
 # Behavior-preserving merge: each concern keeps its own Codex path (integrity calls Codex in-hook;
-# codex-later blocks and Claude makes the consult). The shared prologue (recursion guard, manifest
+# codex-frontier blocks and Claude makes the consult). The shared prologue (recursion guard, manifest
 # gate, transcript) runs ONCE. When both concerns BLOCK in one turn their reasons are combined into a
 # SINGLE block. FAIL-OPEN throughout: any infra failure degrades to advisory, never a hard wedge.
 set -uo pipefail
@@ -38,10 +38,10 @@ manifest="$proj/.claude/do.manifest.json"
 # Which concerns are opted in (recorded in do.manifest.json)?
 has_module() { node -e 'const fs=require("fs");try{const m=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.exit((m.modules||[]).includes(process.argv[2])?0:1)}catch(e){process.exit(1)}' "$manifest" "$1" 2>/dev/null; }
 integrity_on=0; has_module codex-integrity && integrity_on=1
-later_on=0;     has_module codex-later     && later_on=1
-[ "$integrity_on" = 0 ] && [ "$later_on" = 0 ] && exit 0
+frontier_on=0;     has_module codex-frontier     && frontier_on=1
+[ "$integrity_on" = 0 ] && [ "$frontier_on" = 0 ] && exit 0
 
-# Transcript is REQUIRED by the adversarial + codex-later branches, but NOT by the advisory branch
+# Transcript is REQUIRED by the adversarial + codex-frontier branches, but NOT by the advisory branch
 # (which only reminds, based on codex-on-PATH). So extract it softly and guard each branch below.
 transcript=""
 [ "$have_jq" = 1 ] && transcript=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/null || true)
@@ -58,14 +58,14 @@ advisories=()
 if [ "$integrity_on" = 1 ]; then
   flag="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.do-codex-adversarial-active"
   if [ -f "$flag" ] && [ "$(cat "$flag" 2>/dev/null)" = "off" ]; then
-    # ----- advisory mode (former codex-integrity-review.sh): only when adversarial is explicitly off
+    # ----- advisory mode: only when adversarial is explicitly off
     if command -v codex >/dev/null 2>&1; then
       advisories+=("do codex-integrity: run a Codex integrity review on this integrity-watchlist turn (fire the codex skill). If codex errors or times out, fall back to the do:change-skeptic agent (in-session, degraded).")
     else
-      advisories+=("do codex-integrity: codex NOT on PATH -- fire the do:change-skeptic agent as the in-session fallback integrity review of this turn (degraded: same-model self-review, weaker than an independent Codex).")
+      advisories+=("do codex-integrity: codex NOT on PATH -- dispatch the do:change-skeptic agent as the in-session fallback integrity review of this turn (degraded: same-model self-review, weaker than an independent Codex).")
     fi
   elif [ "$have_transcript" = 1 ]; then
-    # ----- adversarial mode (former codex-adversarial-review.sh): ON by default (needs a transcript)
+    # ----- adversarial mode: ON by default (needs a transcript)
     . "$hookdir/../../../spine/hooks/lib/turn-tier.sh"
     classify_turn "$transcript"
     # Non-trivial gate: a TRIVIAL turn (short, no edits, no dispatch) is not worth a Codex run.
@@ -84,8 +84,10 @@ if [ "$integrity_on" = 1 ]; then
         pkt=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/do-adv-$$.txt")
         {
           echo "ADVERSARIAL INTEGRITY REVIEW. Assume failure. Check false/unverified claims,"
-          echo "feature loss, stub/fixture-only delivery, dropped blockers/options, hidden"
-          echo "behavior changes, and bugs in edited code. Read-only FS is available."
+          echo "feature loss, stub/fixture-only delivery, hidden behavior changes, and"
+          echo "bugs introduced or left unfixed. Check discovered frontier work that can cause undesired behavior,"
+          echo "dropped blockers/options, and created or preserved tech debt."
+          echo "Read-only FS is available."
           echo "End exactly: DECISION: ALLOW if clean; else DECISION: BLOCK + numbered issues."
           echo
           echo "=== TURN WORK (assistant text this turn) ==="
@@ -120,8 +122,8 @@ $(printf '%s' "$out" | sed 's/^SOURCE: codex//')")
   fi
 fi
 
-# ============================ Concern B: codex-later =======================================
-if [ "$later_on" = 1 ] && [ "${CODEX_LATER_OFF:-}" != "1" ] && [ "$have_transcript" = 1 ]; then
+# ============================ Concern B: codex-frontier =======================================
+if [ "$frontier_on" = 1 ] && [ "${CODEX_FRONTIER_OFF:-}" != "1" ] && [ "$have_transcript" = 1 ]; then
   # Decline-respect: if the user rejected a consult or interrupted a tool call recently, stay quiet.
   if ! tail -c 200000 "$transcript" 2>/dev/null | grep -qiE "doesn't want to proceed|request interrupted by user"; then
     # Branch 1: open non-[USER] items in the most recent assistant turn.
@@ -156,15 +158,15 @@ if [ "$later_on" = 1 ] && [ "${CODEX_LATER_OFF:-}" != "1" ] && [ "$have_transcri
 
     if [ -n "$frontier" ] || [ -n "$align" ]; then
       if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "1" ]; then
-        fix_clause='ALIGN: Codex may edit directly (ASK_CODEX_ALLOW_EDITS=1, workspace-write). Run consult, verify result, then fall back to do:distinguished-engineer / do:test-engineer if needed.'
+        fix_clause='ALIGN: Codex edits directly only when ASK_CODEX_ALLOW_EDITS=1. Run consult and verify result. If Codex advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
       else
-        fix_clause='ALIGN: have Codex propose the fix, apply it yourself, then fall back to do:distinguished-engineer / do:test-engineer if needed. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
+        fix_clause='ALIGN: have Codex propose the fix, apply it yourself, then verify. If Codex advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
       fi
       sections=()
-      [ -n "$frontier" ] && sections+=("$(printf 'WORK FRONTIER:\n%s\n1. Finish the requested objective.\n2. Classify discovered work.\n3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.\n4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.\nExecution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.' "$frontier")")
+      [ -n "$frontier" ] && sections+=("$(printf 'WORK FRONTIER:\n%s\n1. Finish the requested objective.\n2. Classify discovered work.\n3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.\n4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.\nAgent-created rollout / flip / readiness gates are frontier work, not terminal user decisions.\nExecution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.' "$frontier")")
       [ -n "$align" ] && sections+=("$(printf 'ADR/SPEC: changed code has a registered ADR/spec. Per @docscheck, review via docs/adr or grounded-docs lookup/cite. If divergent, %s If no source governs, say so and proceed.' "$fix_clause")")
       body=$(printf '%s\n\n' "${sections[@]}")
-      block_reasons+=("$(printf '[CODEX-LATER] Before stopping:\n\n%s\nConsult Codex for these review(s), weigh advice against code/docs, then act this turn. Fires once.' "$body")")
+      block_reasons+=("$(printf '[CODEX-FRONTIER] Before stopping:\n\n%s\nConsult Codex for these review(s), weigh advice against code/docs, then act this turn. Fires once.' "$body")")
     fi
   fi
 fi

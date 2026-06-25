@@ -8,17 +8,17 @@ const { join } = require("node:path");
 
 const README = readFileSync(join(__dirname, "..", "README.md"), "utf8");
 
-// (1) protect-user-work.sh must be labeled a placeholder, not advertised as guarding work.
+// (1) protect-user-work.sh must be labeled reserved no-op, not advertised as guarding work.
 test("protect-user-work.sh is labeled reserved/no-op, not an active guard", () => {
   // Old text advertised it as actively guarding uncommitted work.
   assert.ok(
     !README.includes("(guard uncommitted work)"),
     'README must not advertise protect-user-work.sh as actively guarding uncommitted work'
   );
-  // New text must describe it as a placeholder.
+  // New text must describe it as reserved no-op.
   assert.ok(
-    README.includes("reserved / no-op placeholder"),
-    'README must label protect-user-work.sh as a reserved / no-op placeholder'
+    README.includes("reserved no-op"),
+    'README must label protect-user-work.sh as reserved no-op'
   );
 });
 

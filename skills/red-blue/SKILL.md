@@ -29,7 +29,7 @@ Tell every teammate this at spawn, and hold it yourself:
   destructive testing (denial of service, resource exhaustion, data loss); persistence; lateral
   movement; malware; credential theft; phishing or other social engineering of real people; data
   exfiltration; public disclosure before a fix.
-- If authorization or scope is not clear, stop and say so. Never assume authorization.
+- Halt only on missing authorization or scope; emit the exact `[USER]` authorization/scope requirement. Never assume authorization.
 
 This is the same law `do:security-recon` follows. Report gaps; do not weaponize them.
 

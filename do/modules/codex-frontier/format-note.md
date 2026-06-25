@@ -1,7 +1,7 @@
-### Codex-later gate (codex-later module)
+### Codex frontier gate (codex-frontier module)
 
 **Stop hook on discovered frontier.** When a turn leaves open non-`[USER]` items,
-`codex-later-stop.sh` blocks once and directs you to consult Codex (the `codex` skill) with this
+`codex-stop.sh` blocks once and directs you to consult Codex (the `codex` skill) with this
 work frontier rule:
 
 1. Finish the requested objective.
@@ -14,6 +14,11 @@ work frontier rule:
 
 Execution loop: `objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
 
+Agent-created rollout / flip / readiness gates are frontier work, not terminal user decisions. If a
+freshness barrier, backfill, reconciler, least-privilege role, migration, or operational prerequisite
+is required for the requested feature to be coherent, build it in the drain loop or mark the feature
+incomplete with evidence.
+
 **ADR / spec alignment.** When a turn changes code AND the project has a registered ADR
 (`docs/adr/`) or grounded-docs specification index, the same hook also directs a review of the
 change against its governing decision record per `@docscheck` — and on divergence, ALIGN it:
@@ -25,5 +30,5 @@ to your repo, so it is opt-in and off by default).
 
 Self-gated on the manifest (fires only where the module is enabled), recursion-safe (once
 per turn), decline-respecting (backs off right after you reject a consult), and FAIL-OPEN.
-Disable with `export CODEX_LATER_OFF=1`. Replaces the old local codex-on-question hooks,
+Disable with `export CODEX_FRONTIER_OFF=1`. Replaces the old local codex-on-question hooks,
 which fired on any `?`. Codex is advisory — weigh it against the code.

@@ -36,6 +36,6 @@ gitignored (`.do/` is in `.gitignore`); the committed artifact is the output spe
 
 ## Path and slug
 
-- Slug: kebab-case of the product (and subject if needed) — e.g. `example-ide`.
+- Slug: kebab-case of the product, plus subject when required — e.g. `example-ide`.
 - Path: `.do/adr-spec/<slug>.state.json`, relative to the target repo root.
 - Read it on start to resume; write it after each step so an interrupted run loses nothing.

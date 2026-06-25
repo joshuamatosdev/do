@@ -36,6 +36,10 @@ After setup, `/do:run` drives everything (see [Commands](#commands)).
 
 The system.
 
+Read them as a machine, not a human team — the habits built on human limits (stopping at
+good-enough, copying the usual way, human-sized steps) are not yours to keep; the ones about being
+correct always are. Full form in `do:style`.
+
 1. **Engineer before implementing** — code from an explicit basis, not a guess.
 2. **Minimum sufficient architecture** — the least complex design that meets the real need.
 3. **Invariant-first** — name what must never break; tests prove the invariants.
@@ -137,7 +141,7 @@ Modules are chosen at `/do:run setup` or added with
 | `completion-gates` | evidence gates: schema/DB, security, API/contract, operations. | — |
 | `memory-discipline` | File-based memory: a `MEMORY.md` index + one-fact-per-file + `do-remember` (write) and `do-memory-audit` (review). | — |
 | `codex-integrity` | A Stop hook that sends the (scrubbed) assistant turn text to an external Codex LLM for adversarial review (read-only file access); fail-open to `change-skeptic` when Codex is absent. | `codex` CLI |
-| `codex-later` | A Stop hook that drains open non-`[USER]` frontier items and aligns changed code to its registered ADR / grounded-docs spec via a Codex consult; fail-open. | `jq`, `codex` CLI |
+| `codex-frontier` | A Stop hook that drains open non-`[USER]` frontier items and aligns changed code to its registered ADR / grounded-docs spec via a Codex consult; fail-open. | `jq`, `codex` CLI |
 | `commit-doctor` | Auto-heals a failed `git commit` (classify → fix → retry, never `--no-verify`). | `jq` CLI |
 | `git-gate` | PreToolUse (Bash\|PowerShell) default-deny git allowlist: blocks destructive / history-rewriting git (`reset --hard`, `checkout`, `switch`, `rebase`, `merge`, force-push, branch create/delete, `stash`, `--no-verify`/`--amend`); allows read-only + safe forms (add, commit, push non-force, fetch, pull). | `node` |
 | `task-router` | The `do-route` skill. | — |
@@ -150,7 +154,6 @@ Modules are chosen at `/do:run setup` or added with
 
 ```
 SESSION START
-  load-response-format.sh   -> tiered response format into context
   load-do-one.sh            -> the five moves into context
   load-capability-gate.sh   -> "check before you say you can't"
   do-compress-activate.js   -> compression mode (if on)
@@ -158,12 +161,11 @@ SESSION START
   oppihtnias-activate.js    -> seed this session's task state
 
 EACH USER PROMPT
-  inject-response-format.sh -> re-state the format for the turn
   do-compress-tracker.js / do-mon-tracker.js -> track + toggle those modes
 
 BEFORE A TOOL RUNS  (PreToolUse)
   Bash | PowerShell  -> git-gate.sh           (opt-in git-gate module: block harmful git)
-  Edit | Write       -> protect-user-work.sh   (reserved / no-op placeholder — not yet active)
+  Edit | Write       -> protect-user-work.sh   (reserved no-op)
                         block-stub-write.sh    (no stubs / TODOs)
                         docs-compliance-check.sh (spec & reference compliance)
 
@@ -171,10 +173,8 @@ AFTER A BASH RUN  (PostToolUse)
   commit-doctor.sh   -> heal a failed git commit
 
 TURN END  (Stop)
-  validate-response-format.sh -> does the answer meet its tier?
   validate-continuation.sh    -> no work handed back; not ending on a question
-  codex-integrity-review.sh   -> Codex adversarial integrity review
-  codex-adversarial-review.sh -> block on anything flagged
+  codex-stop.sh               -> Codex integrity review + frontier drain
 ```
 
 ## How `do:mon` works

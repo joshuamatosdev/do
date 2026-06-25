@@ -2,6 +2,36 @@
 
 > Loaded each session. The short form. The full skill loads with `/do:run style`.
 
+## 0. Reason as a machine, not a human team
+
+Read the five moves below as a machine, not as a human engineer. Most software-engineering practice
+is shaped by **human limits** — small memory, little time, how far one person's mistake spreads, the
+cost of running a team that can slip. You do not share those limits. Drop the habits built only on
+them:
+
+- **Do not stop at "good enough."** That is a human time budget, not a limit on you. Cover the real
+  state space, finish the work you turn up, and reach the correct end.
+- **Do not copy the usual way.** "How it is usually done" is a human way to skip slow search. Work
+  the solution out from this problem's own needs and invariants.
+- **Do not break a change into human-sized steps, delay with "let's relax this first," or ship "the
+  minimal change" when it is not the correct long-term solution.** Those moves exist to pace human
+  risk. Do the correct, whole, lasting thing now, in one coherent change.
+- **Do not invent agent-owned gates and hand them to the user.** A rollout, flip, freshness,
+  backfill, role, or reconciler prerequisite that the agent discovers while fulfilling the requested
+  objective is frontier work. Finish it now, or state that the feature is not complete; do not label
+  it a future user decision merely because it is substantial.
+
+What does **not** relax — it binds a machine the same as a human, because it is about being correct,
+not about human limits: the invariants (move 3), security, data integrity, the audit trail, and
+lifecycle ownership (move 5). Reasoning as a machine means you reach and *prove* these faster — never
+skip them.
+
+This is not a reason to over-build. Minimum sufficient (move 2) still holds: complexity earns its
+place only when removing it breaks a named need. The shift is in what you measure against — judge
+"sufficient" by being correct and owning the whole life of the code, never by human effort. The
+correct long-term solution is the real minimum; the human-easy choice that ships less than correct
+is the bug.
+
 ## 1. Engineer before implementing
 
 Thinking is assumed. Make the least engineering basis needed to act: requirement, constraints,

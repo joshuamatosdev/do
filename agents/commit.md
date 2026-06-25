@@ -30,7 +30,7 @@ tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill", "Agent
 Before reporting "I can't", "I don't know", or "blocked", use your tools first:
 - **Know:** Read/Grep/Glob the repo, then WebSearch / WebFetch official docs — never answer from memory or stop at "not sure".
 - **Verify:** diagnose a failed commit with Bash (read the hook output, run the formatter/linter/test) before reporting it unfixable.
-- **Delegate:** if the work genuinely needs another specialist, name the `do:` agent to dispatch in your findings — you return your findings; the caller dispatches.
+- **Delegate:** if the work genuinely needs another specialist, emit a dispatch brief with owner, inputs, and acceptance checks; the orchestrator dispatches it before stopping when safe and in scope.
 
 A refusal is valid only after the check comes back empty; then say what you checked and what you still need.
 
@@ -248,7 +248,7 @@ When three genuine attempts fail:
 Write this when a Class B cause stops the pipeline, or when 3 attempts exhaust and the commit still
 will not pass its hook (e.g., the real defect is still live).
 
-Create the directory if needed:
+Create the directory when missing:
 ```bash
 mkdir -p <REPO_PATH>/.claude/incidents
 ```
@@ -330,7 +330,7 @@ point to is not a report.
 
 ## Temporary files
 
-Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Hand back your result as your output, not as a file in the repo. Intentional persistent records — your progress log under `.claude/state/do-commit/` and incident reports under `.claude/incidents/` — are NOT temp files; they belong in the repo's `.claude/` tree.
+Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Return your result as your output, not as a file in the repo. Intentional persistent records — your progress log under `.claude/state/do-commit/` and incident reports under `.claude/incidents/` — are NOT temp files; they belong in the repo's `.claude/` tree.
 
 ## Resources
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Stop hook: SEMANTIC continuation gate. Where validate-response-format.sh checks report SHAPE,
-# this checks COMPLETION -- it blocks a turn that is ENDING while its own response still lists
+# Stop hook: SEMANTIC continuation gate -- checks COMPLETION, not report shape.
+# It blocks a turn that is ENDING while its own response still lists
 # actionable work (an open "- [ ]" item not tagged [USER]), a passive
 # "awaiting your direction" hand-back, or a question mark (owner act-and-finish policy: ACT and FINISH the work, not hand it back -- never end a
 # turn asking the user -- ACT, or tag a real [USER] decision phrased without a question mark).
@@ -9,7 +9,7 @@
 # fire the codex skill on the next continuation; it does NOT call codex itself). Only a Codex HOLD,
 # a [USER]-tagged decision, a complete turn, or the hard iteration cap ends it.
 #
-# Separate from the format gate by design (structural vs. semantic; independently testable).
+# Semantic, not structural, by design (independently testable).
 # Self-gates on .claude/RESPONSE-FORMAT.md so it only runs in do-installed projects.
 # FAIL-OPEN: jq missing / no transcript / spec absent / parse error / empty text -> exit 0.
 # Loop-bounded: a per-session state file counts blocks + no-progress stalls; a hard cap is the
@@ -36,7 +36,7 @@ case "$MAX" in (*[!0-9]*|'') MAX=25;; esac
 case "$K"   in (*[!0-9]*|'') K=2;;   esac
 
 # --- Assistant text for THIS turn (every text block since the last genuine human prompt). -----
-# Same human-boundary logic as validate-response-format.sh so "the turn" means the same thing.
+# Same human-boundary logic the do Stop hooks share (see lib/turn-tier.sh) so "the turn" means the same thing.
 text=$(jq -rs '
   . as $all | ($all|length) as $len
   | [ range(0;$len) as $i | $all[$i] as $e
@@ -77,10 +77,10 @@ case "$toolcount" in (*[!0-9]*|'') toolcount=0;; esac
 
 # --- Signals over the turn text. --------------------------------------------------------------
 # Open checkbox items: any "- [ ]" line. Only a [USER] decision can be non-actionable.
-# [LATER] is not an escape hatch. Open non-[USER] work is frontier work.
+# Legacy escape tags are not escape hatches. Open non-[USER] work is frontier work.
 # Drain safe, relevant, tool-executable frontier work before stopping.
 open_lines=$(printf '%s' "$text" | grep -E '^[[:space:]]*-[[:space:]]*\[ \]' || true)
-untagged_open=0; has_open=0; action_user=0; user_action_lines=""
+untagged_open=0; has_open=0; action_user=0; self_gate_user=0; user_action_lines=""; self_gate_user_lines=""
 if [ -n "$open_lines" ]; then
   has_open=1
   printf '%s' "$open_lines" | grep -qvE '\[USER\]' && untagged_open=1
@@ -92,6 +92,17 @@ if [ -n "$open_lines" ]; then
   # backend" hand-back that should have just been done).
   user_lines=$(printf '%s' "$open_lines" | grep -E '\[USER\]' || true)
   if [ -n "$user_lines" ]; then
+    # A decision-worded [USER] item is still invalid when it asks the user whether the agent should
+    # build, finish, or defer prerequisites the agent itself introduced ("flip-gates", rollout
+    # readiness, cutover blockers). Those are frontier work unless an actual irreversible /
+    # outward-facing decision remains after implementation is complete.
+    self_gate_user_lines=$(printf '%s' "$user_lines" \
+      | grep -iE '\b(flip[- ]?(gate|gates|readiness|rollout)|leave (it|them )?deferred|deferred until|defer(red)? (until|to) (a )?(scheduled )?(cutover|rollout|release|later)|build .*defer|implement .*defer|finish .*defer)\b' \
+      || true)
+    if [ -n "$self_gate_user_lines" ]; then
+      self_gate_user=1
+      action_user=1
+    fi
     user_action_lines=$(printf '%s' "$user_lines" \
       | grep -viE '\b(choose|choice|decide|decision|whether|which|approve|approval|pick|prefer|consent|sign[- ]?off|go/?no-?go|trade-?off)\b' \
       | grep -iE '\b(restart|reboot|re-?run|rerun|run|start|stop|commit|push|pull|build|rebuild|deploy|redeploy|install|reinstall|uninstall|fix|add|remove|delete|drop|update|upgrade|sync|resync|re-?sync|wire|enable|disable|configure|create|write|merge|rebase|revert|rollback|bump|patch|migrate|seed|launch|execute|exec|apply|generate|regenerate|refactor|rename|move|copy|implement|finish|complete|provision|scaffold|kill)\b' \
@@ -180,9 +191,9 @@ escalate=0
 { [ "$blocker" = "1" ] || [ "$stall_new" -ge "$K" ]; } && escalate=1
 
 # Quote up to 3 actionable frontier items for the reason.
-items=$( { printf '%s\n' "$open_lines" | grep -vE '\[USER\]'; printf '%s\n' "$user_action_lines"; } | grep -E '\[ \]' | head -3 | sed 's/^[[:space:]]*//' | tr '\n' ' ' || true)
+items=$( { printf '%s\n' "$open_lines" | grep -vE '\[USER\]'; printf '%s\n' "$user_action_lines"; printf '%s\n' "$self_gate_user_lines"; } | grep -E '\[ \]' | head -3 | sed 's/^[[:space:]]*//' | tr '\n' ' ' || true)
 
-frontier_policy="1. Finish the requested objective. 2. Classify discovered work. 3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable. 4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain. Execution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop."
+frontier_policy="1. Finish the requested objective. 2. Classify discovered work. 3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable. 4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain. Agent-created rollout / flip / readiness gates are frontier work, not terminal user decisions. Execution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop."
 
 if [ "$escalate" = "1" ]; then
   reason="do continuation gate (Never-Stop-Escalate): blocker/no-progress while frontier work remains. $frontier_policy Run \`codex --decide\`. PROCEED: continue only on a verified safe path. HOLD or irreversible/outward-facing approval: return with \`- [ ] [USER] <choice>\`. If Codex is unavailable, dispatch do:change-skeptic. Frontier work: ${items:-<see your Remaining Steps>}"
@@ -194,6 +205,9 @@ fi
 # reason (EVERY path, not only the no-open-work case) so the agent always sees WHY a '?' fired.
 if [ "$question" = "1" ]; then
   reason="$reason  --  act-and-finish: a prose question mark means you are asking instead of acting. Act on the answer, ground/test it, or record a real user-only choice as \`- [ ] [USER] <choice>\` without a question mark."
+fi
+if [ "$self_gate_user" = "1" ]; then
+  reason="$reason  --  agent-created gate handoff: rollout or flip prerequisites the agent identified are frontier work, not a user decision. Finish them now, or mark the feature incomplete with grounded evidence."
 fi
 
 printf '{"blocks":%s,"stall":%s,"lastToolCount":%s}\n' "$blocks_new" "$stall_new" "$toolcount" > "$state_file" 2>/dev/null || true

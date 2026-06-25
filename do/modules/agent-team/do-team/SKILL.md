@@ -53,7 +53,7 @@ basis / ADR before any code — process before implementation. Skip for a small,
 Dispatch each task to the right specialist. Parallelize independent tasks; use git-worktree isolation
 when teammates edit files concurrently. Compute discipline: mechanical / enumerated edits → a
 Sonnet-tier agent, judgment → an Opus-tier agent. Give each a focused brief: the done-condition + the
-return contract (files, tests, what to hand back).
+return contract (files, tests, required output).
 
 Caveats (agent-teams docs): a teammate honors its agent definition's `tools` / `model`, but its
 `skills` / `mcpServers` frontmatter is **not** applied; teammates load the project CLAUDE.md + skills

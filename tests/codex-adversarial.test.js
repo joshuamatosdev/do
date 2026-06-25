@@ -4,12 +4,11 @@ const { execFileSync, spawnSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/");
 // Both the adversarial executor and the advisory reminder are now branches of the unified codex-stop.sh.
-const HOOK = fwd(join(ROOT, "do", "modules", "codex-integrity", "hooks", "codex-stop.sh"));
-const REMINDER = fwd(join(ROOT, "do", "modules", "codex-integrity", "hooks", "codex-stop.sh"));
+const HOOK = bashPath(join(ROOT, "do", "modules", "codex-integrity", "hooks", "codex-stop.sh"));
+const REMINDER = HOOK;
 const MODE = join(ROOT, "do", "modules", "codex-integrity", "lib", "adversarial-mode.js");
 const FLAG = ".do-codex-adversarial-active";
 
@@ -26,7 +25,7 @@ function env(mode, modules = ["codex-integrity"], extra = {}) {
   const proj = mkdtempSync(join(tmpdir(), "do-proj-"));
   mkdirSync(join(proj, ".claude"), { recursive: true });
   writeFileSync(join(proj, ".claude", "do.manifest.json"), JSON.stringify({ version: "0", modules }));
-  return { ...process.env, CLAUDE_CONFIG_DIR: fwd(cfg), CLAUDE_PROJECT_DIR: fwd(proj), ...extra };
+  return bashEnv({ CLAUDE_CONFIG_DIR: bashPath(cfg), CLAUDE_PROJECT_DIR: bashPath(proj), ...extra });
 }
 
 // Transcript: a non-trivial turn (assistant text >= 800 chars) unless `trivial`.
@@ -39,7 +38,7 @@ function transcript(trivial) {
   ];
   const f = join(dir, "t.jsonl");
   writeFileSync(f, lines.join("\n") + "\n");
-  return fwd(f);
+  return bashPath(f);
 }
 
 // Run the hook; return { blocked, stdout }.
@@ -52,6 +51,19 @@ function runHook(e, tf, { stopActive = false } = {}) {
     return { blocked: String(err.stdout || "").includes('"block"'), stdout: String(err.stdout || "") };
   }
 }
+
+test("adversarial prompt checks bugs, discovered frontier risk, and tech debt", { skip: SKIP }, () => {
+  const cap = join(mkdtempSync(join(tmpdir(), "do-codex-prompt-")), "prompt.txt");
+  const e = env("default", ["codex-integrity"], {
+    INTEGRITY_CODEX_CMD: `cat > '${bashPath(cap)}'; printf 'DECISION: ALLOW\\n'`,
+  });
+  const r = runHook(e, transcript(false));
+  assert.equal(r.blocked, false);
+  const prompt = readFileSync(cap, "utf8");
+  assert.match(prompt, /bugs introduced or left unfixed/);
+  assert.match(prompt, /discovered frontier work that can cause undesired behavior/);
+  assert.match(prompt, /created or preserved tech debt/);
+});
 
 test("adversarial-mode CLI: ON by default, off persists a marker, toggle flips", { skip: SKIP }, () => {
   const cfg = mkdtempSync(join(tmpdir(), "do-cfg-"));

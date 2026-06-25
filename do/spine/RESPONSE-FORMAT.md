@@ -1,14 +1,15 @@
 # RESPONSE FORMAT
 
-> Main source. Added every session and re-stated every turn; checked at Stop.
-> **Load-bearing — keep verbatim:** the `##` section headers and `How commitment 1/2 was met` (the gate searches for them).
-> **Everything else:** tables and lists, short text, no walls of text.
+> Reference for response shape — the tier vocabulary and per-tier section floors.
+> **No longer auto-injected or enforced:** the SessionStart load, per-turn inject, and Stop-gate
+> hooks were removed. Kept as guidance; `CLAUDE.do.md` ("match ceremony to turn tier") still points here.
+> **Style:** tables and lists, short text, no walls of text.
 
 ## When required
 
 Any turn that is a question, plan, status, debug, implementation, handoff, or completion. Match ceremony to the turn — write to your tier's floor. If the tier is unclear, satisfy the next floor and keep it concise and evidence-based (the gate fails open, so under-writing a heavy turn is the only miss it can't catch).
 
-**How the gate acts on a miss:** it **blocks** (re-prompts) only when the turn has proven on-transcript production substance — a high-stakes edit, or a production-code file edited this turn — because that turn visibly owes a structured account. A turn judged substantive only by text length (no production edit) gets a **non-blocking advisory** instead. The gate blocks what it can prove and only nudges what it infers, so a valid-but-differently-shaped turn is never blocked.
+**Enforcement (removed):** a Stop gate (`validate-response-format.sh`) once blocked a miss only when the turn had proven on-transcript production substance, and advised otherwise. That gate and its session-load / per-turn-inject siblings have been removed — this doc is now reference-only.
 
 ## Tiers
 
@@ -87,6 +88,12 @@ The only sanctioned open item is a genuine user-decision
 `- [ ] [USER] <the specific irreversible or outward-facing decision only the user can make>`.
 A blocker escalates to `codex --decide`.
 
+Do not turn agent-created work into a user gate. Rollout, flip-readiness, freshness, backfill,
+least-privilege role, reconciler, migration, or operations prerequisites discovered while fulfilling
+the requested objective are frontier work when they are safe and tool-executable. Finish them in the
+same drain loop, or report the feature as incomplete with evidence; do not ask the user whether to
+build them later.
+
 ### Bugs / Gaps / Inconsistencies — conditional, only when merited
 
 There is **no** umbrella section and no always-printed header. When this turn noticed extra issues outside the asked work, print only the matching label(s) below — label on its own line, items on the next lines — and **omit any label that has no items**. If nothing was noticed, print nothing here at all. These are NOT gate-required; they appear only when there is something real to report.
@@ -148,6 +155,9 @@ Edge case test | |
 
 - Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [USER]` irreversible / outward-facing decisions. Do not tag safe tool work, pushable blockers, or beneath-attention trivia as `[USER]`. Open non-`[USER]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
 
+- Agent-created rollout / flip / readiness gates are not terminal user decisions. If they are needed
+  for the requested feature to be coherent, drain them or mark the feature incomplete.
+
 - Frontier drained — everything required or discovered-safe was attempted this turn, or surfaced under Bugs / Gaps / Inconsistencies.
 
 - Tests run and green — or stated explicitly that no code changed this turn.
@@ -156,9 +166,9 @@ Edge case test | |
 
 ---
 
-## Gate-required markers (single source of truth for the Stop gate)
+## Tier → required sections (was the Stop gate's source of truth)
 
-The Stop gate (`validate-response-format.sh`) extracts the verbatim required strings for the classified tier from the matching `GATE-REQUIRED:<TIER>` … `GATE-REQUIRED:END` block below — the script does not carry them itself. These are HTML comments: invisible when the markdown renders, plain text for the parser. Each captured line must appear verbatim (fixed-string match) in the gated reply. One marker per line, no blank lines inside a block. To change what the gate enforces, edit the lists here only. Fail-open: if a block is absent the gate allows the turn.
+These `GATE-REQUIRED:<TIER>` … `GATE-REQUIRED:END` blocks listed the verbatim section headers the Stop gate (`validate-response-format.sh`, now removed) required per tier — the same mapping as the tier table above. They are HTML comments (invisible when the markdown renders); nothing reads them at runtime anymore, kept only as a reference mapping.
 
 <!-- GATE-REQUIRED:LITE
 ## Goal

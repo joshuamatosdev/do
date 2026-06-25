@@ -1,6 +1,6 @@
 {
   "name": "codex-integrity",
-  "description": "Stop-hook integrity gate, ON by default (adversarial mode): on every non-trivial turn it auto-runs an end-of-turn Codex (gpt-5.5) adversarial review and BLOCKS on anything flagged. Fail-open — if the codex CLI is absent/errors/times out it falls back to a do:change-skeptic advisory and never hard-blocks. Opt out with `/do:run codex off` (or `toggle`), which reverts to an advisory reminder only. Requires the codex CLI to perform the review. DISCLOSURE: this module sends the (secret-scrubbed) text of each reviewed turn to an EXTERNAL LLM (the local codex CLI / OpenAI). Turn text is routed through the shared secret-scrubber before egress (fail-closed: if scrubbing fails, nothing is sent), and codex runs READ-ONLY (--sandbox read-only) — it can read the repo to verify claims but cannot write, run network, or mutate machine state.",
+  "description": "Stop-hook integrity gate, ON by default (adversarial mode): on every non-trivial turn it auto-runs an end-of-turn Codex (gpt-5.5) adversarial review and BLOCKS on anything flagged, including bugs introduced or left unfixed, discovered frontier work that can cause undesired behavior, and created or preserved tech debt. Fail-open — if the codex CLI is absent/errors/times out it falls back to a do:change-skeptic advisory and never hard-blocks. Opt out with `/do:run codex off` (or `toggle`), which reverts to an advisory reminder only. Requires the codex CLI to perform the review. DISCLOSURE: this module sends the (secret-scrubbed) text of each reviewed turn to an EXTERNAL LLM (the local codex CLI / OpenAI). Turn text is routed through the shared secret-scrubber before egress (fail-closed: if scrubbing fails, nothing is sent), and codex runs READ-ONLY (--sandbox read-only) with read-only repository access to verify claims; it cannot write, run network, or mutate machine state.",
   "stackHint": [],
   "files": [],
   "appendFormat": "format-note.md",
@@ -11,6 +11,6 @@
     "sendsToExternalLLM": true,
     "target": "codex CLI (gpt-5.5 / OpenAI)",
     "dataSent": "the assistant's turn text for the reviewed turn, secret-scrubbed before egress via lib/do-mon-context.js --scrub (fail-closed: if scrubbing is unavailable, no text is sent and the review degrades to the in-session do:change-skeptic)",
-    "execution": "read-only — codex runs with --sandbox read-only; it may read the repository to verify claims but cannot write files, access the network, or mutate machine state"
+    "execution": "read-only — codex runs with --sandbox read-only; it has read-only repository access to verify claims but cannot write files, access the network, or mutate machine state"
   }
 }

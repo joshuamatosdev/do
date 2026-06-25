@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // PreToolUse(Edit|Write|MultiEdit) hook docs-compliance-check.sh (@docscheck): in a do-installed
 // project that has a grounded-docs index, the FIRST governed edit of a session is held once (exit 2)
@@ -12,9 +13,7 @@ const { tmpdir } = require("node:os");
 function has(bin) { try { execFileSync("bash", ["-c", `command -v ${bin}`], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : false;
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/");
-const HOOK = fwd(join(ROOT, "do", "spine", "hooks", "docs-compliance-check.sh"));
+const HOOK = "do/spine/hooks/docs-compliance-check.sh";
 
 function project({ manifest = true, index = true, home = "agent-docs" } = {}) {
   const t = mkdtempSync(join(tmpdir(), "do-docscheck-"));
@@ -26,9 +25,13 @@ function project({ manifest = true, index = true, home = "agent-docs" } = {}) {
 
 // Run the hook; normalize execFileSync's throw-on-nonzero into { status, stderr }.
 function run(dir, sid = "s1") {
-  const input = JSON.stringify({ session_id: sid, tool_name: "Edit", tool_input: { file_path: "x.ts", old_string: "a", new_string: "b" }, cwd: fwd(dir) });
+  const input = JSON.stringify({ session_id: sid, tool_name: "Edit", tool_input: { file_path: "x.ts", old_string: "a", new_string: "b" }, cwd: bashPath(dir) });
   try {
-    const out = execFileSync("bash", [HOOK], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(dir) } });
+    const out = execFileSync("bash", [HOOK], {
+      cwd: ROOT,
+      input,
+      env: bashEnv({ CLAUDE_PROJECT_DIR: bashPath(dir) }),
+    });
     return { status: 0, stderr: "" };
   } catch (e) {
     return { status: e.status, stderr: (e.stderr || "").toString() };

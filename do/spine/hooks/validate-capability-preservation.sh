@@ -6,7 +6,7 @@
 # read-model) is missing, then reads as complete. Reuses the per-session baseline written by
 # snapshot-capability-candidates.sh so only candidates INTRODUCED this turn surface.
 #
-# Rollout: advisory-first (this file). Blocking "agency" comes after a tuning pass -- to flip, change
+# Rollout mode: advisory. To enforce, emit decision:block.
 # the final emit from a stderr note to a {"decision":"block"} JSON. FAIL-OPEN throughout; ALWAYS
 # exits 0 so a buggy scan can never wedge a session.
 set -uo pipefail
@@ -72,6 +72,6 @@ flagged=$(printf '%s' "$verdict" | jq -r '.violations[]? | "  - " + .symbol + " 
   echo "  1. Build the missing source, compute the real value, and verify to green; OR"
   echo "  2. Keep the honest absence but mark the delivery -- put 'CAPABILITY STATUS: NOT COMPLETE' in your first lines, plus a record:"
   echo "     CAPABILITY GAP: symbol=<x> | behavior=<y> | impact=<z> | cause=<w> | disposition=TRACKED:<grounded-id> | evidence=<file:line>"
-  echo "Do not present a degraded sentinel as a finished fix. (Advisory only for now -- this does not block.)"
+  echo "Do not present a degraded sentinel as a finished fix. (Non-blocking advisory; report and continue.)"
 } >&2
 exit 0

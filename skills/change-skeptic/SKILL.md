@@ -6,7 +6,7 @@ description: Adversarial turn-level integrity review — assume the turn lied un
 # change-skeptic
 
 **Start by not believing the turn.** Assume the turn under review degraded something, claimed a
-false "can't", or quietly dropped behavior — and try to prove it. An `ALLOW` has to be earned with
+false "can't", or quietly dropped behavior — and prove it. An `ALLOW` has to be earned with
 concrete evidence from the code and the turn's own text. No benefit of the doubt.
 
 This is the **integrity check** for a turn — the same job the `codex-integrity` Stop gate routes to
@@ -49,8 +49,8 @@ that claimed "can't") — review the claim against what the repo actually suppor
 4. **Blocked-as-delete** — did it treat "blocked" or "hard" as permission to delete, skip, or
    normalize a loss instead of fixing forward?
 
-5. **Skipped alternative** — is there an alternative implementation path it did not try that would
-   have avoided the loss or the "can't"?
+5. **Skipped alternative** — did the turn omit an implementation path that would have avoided the
+   loss or the "can't"?
 
 ## Decision rules
 
@@ -84,5 +84,4 @@ Match the codex gate's grammar so this is a drop-in fallback — no markdown fen
     REASON: <one or two factual sentences; cite file:line you verified>
     INSTRUCTION: <if BLOCK/REPAIR: the concrete next action — what to build or restore>
 
-Then one line stating you are `do:change-skeptic` (the in-session fallback, not Codex) so the caller
-knows the review was degraded.
+Then one line stating you are `do:change-skeptic` (the in-session fallback, not Codex) so the orchestrator records the degraded review source.

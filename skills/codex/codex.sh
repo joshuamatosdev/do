@@ -263,7 +263,7 @@ fi
 # Launch Codex in the BACKGROUND so we can reap its WHOLE process tree on timeout
 # or a stuck network. GNU `timeout` (used previously) TERMs only the node launcher
 # and ORPHANS the native codex.exe, which keeps running for minutes burning tokens
-# (see codex-integrity-review-stop.sh:220-240). Reap by Windows PID via taskkill //T;
+# (see codex-stop.sh). Reap by Windows PID via taskkill //T;
 # winpid comes from /proc/<pid>/winpid (the MSYS pid != the Windows pid).
 "$CODEX" exec \
   --dangerously-bypass-approvals-and-sandbox \

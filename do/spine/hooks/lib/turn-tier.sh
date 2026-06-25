@@ -9,8 +9,8 @@
 #     TURN_DISPATCHED  1 if a subagent (Task/Agent) was dispatched this turn, else 0
 #     TURN_TIER        TRIVIAL | LITE | REPORT | FULL
 #
-# This is the single source of the tier logic that validate-response-format.sh and
-# codex-stop.sh both depend on (was duplicated jq + thresholds). Requires jq;
+# This is the single source of the tier logic that codex-stop.sh and
+# validate-capability-preservation.sh depend on (was duplicated jq + thresholds). Requires jq;
 # on any failure it leaves TURN_TEXT empty and TURN_TIER=TRIVIAL so callers fail open.
 #
 # A subagent dispatch is NOT a tier signal: the dispatched agent's edits/commits are its own

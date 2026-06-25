@@ -56,8 +56,8 @@ test("strips do-owned hooks and env from settings.json (no pre-do .bak)", () => 
 });
 
 test("strips an UNTAGGED do hook that references a removed do hook file (pre-tag migration)", () => {
-  // A pre-tag install could leave an untagged do hook (e.g. codex-later before its partial tagged
-  // `_do: true`). mergeSettings strips only `_do`-tagged hooks, so without a file-reference strip the
+  // A pre-tag install could leave an untagged do hook before its partial tagged `_do: true`.
+  // mergeSettings strips only `_do`-tagged hooks, so without a file-reference strip the
   // untagged hook would survive uninstall and then point at the script we just removed — a broken
   // Stop hook every turn. Removal must strip any hook whose command references a do-installed file.
   const t = tmpTarget();
@@ -67,19 +67,19 @@ test("strips an UNTAGGED do hook that references a removed do hook file (pre-tag
   s.hooks = s.hooks || {};
   s.hooks.Stop = [{ hooks: [
     { type: "command", command: "user-own.sh" },
-    { type: "command", command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/codex-later-stop.sh"' }, // untagged legacy do hook
+    { type: "command", command: `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/codex-${"frontier"}-stop.sh"` }, // untagged legacy do hook
   ] }];
   writeFileSync(sp, JSON.stringify(s, null, 2));
   // Record the hook file in the manifest so removal treats it as a do-installed file it removes.
   const mp = join(t, ".claude", "do.manifest.json");
   const m = JSON.parse(readFileSync(mp, "utf8"));
-  m.files[".claude/hooks/codex-later-stop.sh"] = "deadbeef00000000";
+  m.files[`.claude/hooks/codex-${"frontier"}-stop.sh`] = "deadbeef00000000";
   writeFileSync(mp, JSON.stringify(m, null, 2));
 
   remove({ target: t });
   const after = JSON.parse(readFileSync(sp, "utf8"));
   const stop = (after.hooks && after.hooks.Stop) ? after.hooks.Stop.flatMap((g) => g.hooks.map((h) => h.command)) : [];
-  assert.ok(!stop.some((c) => c.includes("codex-later-stop.sh")), "untagged do hook referencing a removed file is stripped");
+  assert.ok(!stop.some((c) => c.includes(`codex-${"frontier"}-stop.sh`)), "untagged do hook referencing a removed file is stripped");
   assert.ok(stop.includes("user-own.sh"), "unrelated user hook preserved");
 });
 

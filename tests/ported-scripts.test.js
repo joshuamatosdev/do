@@ -9,8 +9,8 @@ const fs = require("node:fs");
 const { join } = require("node:path");
 const { mkdtempSync, writeFileSync, existsSync, readFileSync } = fs;
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
-const ROOT = join(__dirname, "..");
 
 function pickPython() {
   for (const exe of ["python", "python3"]) {
@@ -50,10 +50,10 @@ test("commit-doctor hook dispatches do:commit and self-gates on the manifest", (
 // ---- #1 safety: hook is inert unless the module is opted in ----
 test("commit-doctor hook exits 0 with no output when no manifest is present", () => {
   const proj = mkdtempSync(join(tmpdir(), "do-cd-"));
-  const out = execFileSync("bash", [join(ROOT, "do", "modules", "commit-doctor", "hooks", "commit-doctor.sh")], {
+  const out = execFileSync("bash", [bashPath(join(ROOT, "do", "modules", "commit-doctor", "hooks", "commit-doctor.sh"))], {
     input: "",
     encoding: "utf8",
-    env: { ...process.env, CLAUDE_PROJECT_DIR: proj },
+    env: bashEnv({ CLAUDE_PROJECT_DIR: bashPath(proj) }),
   });
   assert.equal(out, "", "no additionalContext emitted when not opted in");
 });
@@ -75,7 +75,7 @@ test("map_codebase_structure.py emits JSON summary with file counts and language
 // ---- check-search-tools.sh: reports tool availability, exits 0, generalized (no GEM cruft) ----
 test("check-search-tools.sh reports git as present and exits 0", () => {
   const path = join(ROOT, "tools", "check-search-tools.sh");
-  const out = execFileSync("bash", [path], { encoding: "utf8" });
+  const out = execFileSync("bash", [bashPath(path)], { encoding: "utf8" });
   assert.match(out, /do — tool availability/, "prints the do header");
   assert.match(out, /git\s+OK/, "git detected as present in this env");
   const src = readFileSync(path, "utf8");

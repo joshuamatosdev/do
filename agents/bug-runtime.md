@@ -29,8 +29,8 @@ tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]
 
 Before reporting "I can't", "I don't know", or "blocked", use your tools first:
 - **Know:** Read/Grep/Glob the repo, then WebSearch / WebFetch official docs — never answer from memory or stop at "not sure".
-- **Verify:** reproduce with Bash — the failing test, a script, E2E/Playwright, or a local probe; "can't run it" is rarely true before you try.
-- **Delegate:** if the work genuinely needs another specialist, name the `do:` agent to dispatch in your findings — you return your findings; the caller dispatches. For every confirmed bug this is mandatory: emit a **`do:test-engineer` brief** for a failing user-level regression test (see Step 4b) so the caller dispatches it BEFORE any fix.
+- **Verify:** reproduce with Bash — the failing test, a script, E2E/Playwright, or a local probe; exhaust available probes before declaring it un-runnable.
+- **Delegate:** if the work genuinely needs another specialist, emit a dispatch brief with owner, inputs, and acceptance checks; the orchestrator dispatches it before stopping when safe and in scope. For every confirmed bug this is mandatory: emit a **`do:test-engineer` brief** for a failing user-level regression test (see Step 4b) so the orchestrator dispatches it BEFORE any fix.
 
 A refusal is valid only after the check comes back empty; then say what you checked and what you still need.
 
@@ -82,7 +82,7 @@ run. Capture the output. Only widen to a broader run when the narrow one passes 
 
 **Step 4b — Write the failing test FIRST, at the user's altitude (dispatch test-engineer before any fix).**
 
-A confirmed bug is not ready to fix until a test reproduces it red. You do not write the test (no file edits) — you emit a **test-engineer dispatch brief** (see "Regression Test Brief" below) and tell the caller to dispatch `do:test-engineer` to author it, confirm it FAILS for the bug's reason, and only then let the fixer (`do:distinguished-engineer` or the caller) turn it green.
+A confirmed bug is not ready to fix until a test reproduces it red. You do not write the test (no file edits) — you emit a **test-engineer dispatch brief** (see "Regression Test Brief" below); the orchestrator dispatches `do:test-engineer` before any fix, confirms it FAILS for the bug's reason, and only then dispatches the fixer (`do:distinguished-engineer`) or fixes it directly.
 
 - Frame the behavior claim at the **user-observable boundary** — the action a real user takes and the result they see. The smallest tier that proves a user-observable claim IS an end-to-end / acceptance test, so prefer E2E; drop to integration, then unit, only when the bug genuinely is not user-observable (an internal invariant) — and say why. This keeps the test as close to the user experience as the bug allows without tripping test-engineer's "no heavier tier than the claim needs" rule.
 - One bug → one falsifiable claim → `do:test-engineer`. A bug that spans a whole bounded-context slice → `do:test-engineer-module`.
@@ -119,8 +119,9 @@ first. This is the same supreme law `do:security-recon` and the `red-blue` skill
 2. The user has authorized this session against this target.
 3. Nothing the probe touches is production, staging, CI, or any other shared host.
 
-If any check fails, or you are not sure, stop and say so — do not probe. Fall back to static review or
-the project's own local test suite.
+If any check fails, or you are not sure, halt only on missing authorization or scope; emit the exact
+`[USER]` authorization/scope requirement and fall back to static review or the project's own local
+test suite.
 
 **Probes are detection, never exploitation.** Run the smallest check that confirms the gap, then stop:
 
@@ -161,7 +162,7 @@ For each issue:
 - Suggested fix direction (apply only AFTER the failing test below is red)
 
 ### Regression Test Brief — dispatch do:test-engineer BEFORE the fix
-For each confirmed bug, a brief the caller hands to `do:test-engineer` (or `do:test-engineer-module` for a full slice):
+For each confirmed bug, a dispatch-ready brief for `do:test-engineer` (or `do:test-engineer-module` for a full slice):
 - Behavior claim — one falsifiable, user-observable sentence
 - Tier + why — E2E / acceptance preferred (closest to the user); integration or unit only with a stated reason
 - User entry point — the exact action, route, or command a real user takes to hit it
@@ -191,7 +192,7 @@ For bugs found by reading code rather than running it, dispatch **bug-static** i
 
 ## Temporary files
 
-Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Hand back your result as your output, not as a file in the repo.
+Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Return your result as your output, not as a file in the repo.
 
 ## Resources
 

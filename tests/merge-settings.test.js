@@ -4,8 +4,8 @@ const { mergeSettings } = require("../lib/merge-settings");
 
 const PARTIAL = {
   hooks: {
-    SessionStart: [{ hooks: [{ type: "command", command: "X/load-response-format.sh", _do: true }] }],
-    Stop: [{ hooks: [{ type: "command", command: "X/validate-response-format.sh", _do: true }] }],
+    SessionStart: [{ hooks: [{ type: "command", command: "X/load-do-one.sh", _do: true }] }],
+    Stop: [{ hooks: [{ type: "command", command: "X/validate-continuation.sh", _do: true }] }],
   },
 };
 
@@ -20,14 +20,14 @@ test("preserves user's existing hooks on the same event", () => {
   const out = mergeSettings(existing, PARTIAL);
   const cmds = out.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
   assert.ok(cmds.includes("user.sh"), "user hook kept");
-  assert.ok(cmds.includes("X/load-response-format.sh"), "do hook added");
+  assert.ok(cmds.includes("X/load-do-one.sh"), "do hook added");
 });
 
 test("is idempotent — re-merging does not duplicate do hooks", () => {
   const once = mergeSettings({}, PARTIAL);
   const twice = mergeSettings(once, PARTIAL);
   const cmds = twice.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
-  assert.equal(cmds.filter((c) => c === "X/load-response-format.sh").length, 1);
+  assert.equal(cmds.filter((c) => c === "X/load-do-one.sh").length, 1);
 });
 
 test("preserves unrelated top-level keys", () => {
@@ -39,12 +39,12 @@ test("preserves unrelated top-level keys", () => {
 test("preserves user hooks that share a group with a do hook", () => {
   const existing = { hooks: { SessionStart: [{ hooks: [
     { type: "command", command: "user.sh" },
-    { type: "command", command: "X/load-response-format.sh", _do: true },
+    { type: "command", command: "X/load-do-one.sh", _do: true },
   ] }] } };
   const out = mergeSettings(existing, PARTIAL);
   const cmds = out.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
   assert.ok(cmds.includes("user.sh"), "user hook in a mixed group must be kept");
-  assert.equal(cmds.filter((c) => c === "X/load-response-format.sh").length, 1, "do hook not duplicated");
+  assert.equal(cmds.filter((c) => c === "X/load-do-one.sh").length, 1, "do hook not duplicated");
 });
 
 // Remediation path: legacy installs injected stale ${CLAUDE_PLUGIN_ROOT} `_do` hooks into target
@@ -71,17 +71,17 @@ test("remediation: strips _do hooks from an event the partial does not declare, 
   assert.equal(out.hooks.SessionStart.length, 1, "the partial's own event is still added");
 });
 
-// Migration: before partials tagged their hooks `_do: true`, a do hook could land UNtagged
-// (e.g. codex-later's Stop hook). The plain `_do` strip misses it, so reinstalling with the now-
-// tagged partial would DUPLICATE it. Merging an incoming command that already exists untagged must
+// Migration: before partials tagged their hooks `_do: true`, a do hook could land UNtagged.
+// The plain `_do` strip misses it, so reinstalling with the now-tagged partial would DUPLICATE it.
+// Merging an incoming command that already exists untagged must
 // REPLACE it (dedup by exact command), not stack a second copy.
-const LEGACY_CMD = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/codex-later-stop.sh"';
+const LEGACY_CMD = `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/codex-${"frontier"}-stop.sh"`;
 test("migration: an untagged legacy do hook is not duplicated when the partial re-adds it tagged", () => {
   const legacy = { hooks: { Stop: [{ hooks: [{ type: "command", command: LEGACY_CMD, timeout: 15 }] }] } };
   const tagged = { hooks: { Stop: [{ hooks: [{ type: "command", command: LEGACY_CMD, timeout: 15, _do: true }] }] } };
   const out = mergeSettings(legacy, tagged);
   const stop = out.hooks.Stop.flatMap((g) => g.hooks);
-  assert.equal(stop.length, 1, "exactly one codex-later hook (legacy untagged replaced by tagged)");
+  assert.equal(stop.length, 1, "exactly one legacy do hook (untagged replaced by tagged)");
   assert.equal(stop[0]._do, true, "the surviving hook is the tagged do hook");
 });
 

@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const { mkdtempSync, mkdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // do's enforcement hooks are declared in the plugin manifest, so they LOAD in every
 // plugin-enabled project — including projects that never ran `/do setup`. Invariant under
@@ -14,13 +15,15 @@ const { tmpdir } = require("node:os");
 function hasBash() { try { execFileSync("bash", ["-c", "exit 0"], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = hasBash() ? false : "bash unavailable on this host";
 
-const ROOT = join(__dirname, "..");
-const fwd = (p) => p.replace(/\\/g, "/"); // Git Bash takes drive-letter forward-slash paths
-
 function runHook(absRel, input, projectDir) {
-  const hook = fwd(join(ROOT, absRel));
+  const hook = absRel.replace(/\\/g, "/");
   try {
-    execFileSync("bash", [hook], { input, env: { ...process.env, CLAUDE_PROJECT_DIR: fwd(projectDir) }, stdio: ["pipe", "pipe", "pipe"] });
+    execFileSync("bash", [hook], {
+      cwd: ROOT,
+      input,
+      env: bashEnv({ CLAUDE_PROJECT_DIR: bashPath(projectDir) }),
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     return { code: 0, stderr: "" };
   } catch (e) { return { code: e.status ?? 1, stderr: (e.stderr || "").toString() }; }
 }

@@ -32,7 +32,7 @@ tools: ["Read", "Grep", "Glob", "Write", "Bash", "WebSearch", "WebFetch", "Skill
 Before reporting "I can't", "I don't know", or "blocked", use your tools first:
 - **Know:** Read/Grep/Glob the repo, then WebSearch / WebFetch official docs — never answer from memory or stop at "not sure".
 - **Verify:** verify every documented fact against the code (Read) or a run (Bash) — never document behavior you have not checked.
-- **Delegate:** if the work genuinely needs another specialist, name the `do:` agent to dispatch in your findings — you return the docs; the caller dispatches.
+- **Delegate:** if the work genuinely needs another specialist, emit a dispatch brief with owner, inputs, and acceptance checks; the orchestrator dispatches it before stopping when safe and in scope.
 
 A refusal is valid only after the check comes back empty; then say what you checked and what you still need.
 
@@ -55,7 +55,7 @@ The caller names the thing to document:
   notes or ADRs that shaped it.
 - A delivery or change report — read the commits (`git log`), the diff, and the tests.
 
-If the caller names nothing, ask what to document. Do not guess the scope.
+If no target is named, derive it from the nearest changed/requested artifact; mark `[USER]` only when no documentable target exists.
 
 Read enough to be accurate. Do not read the whole tree when the module or diff is the
 right boundary. Read the tests as well as the code — tests often show the real contract
@@ -106,7 +106,7 @@ is not worth a leaked credential.
 
 If you find docs that contradict the code, list the drift findings in a **Drift** section
 before the new or updated doc. Name the file, the claim that is wrong, and what the code
-actually does. Let the caller decide whether to accept the correction.
+actually does. Mark `[USER]` only when accepting the correction changes product intent.
 
 ## What you return
 
@@ -172,7 +172,7 @@ should not need a dictionary to read the docs you write.
 
 ## Temporary files
 
-Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Hand back your result as your output, not as a file in the repo.
+Any scratch, draft, scoring, or intermediate file you write goes to the **OS temp directory** — shell `mktemp` or `$TMPDIR` (on Windows that resolves under `%TEMP%`), Node `os.tmpdir()` — **never** the repository working tree. You run with the current directory set to the repo, so a temp file written here lands in the repo tree. Return your result as your output, not as a file in the repo.
 
 ## Resources
 

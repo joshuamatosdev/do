@@ -51,7 +51,7 @@ test("preserves existing settings.json without injecting do hooks", () => {
   const s = JSON.parse(readFileSync(join(claude, "settings.json"), "utf8"));
   const cmds = s.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
   assert.ok(cmds.includes("user.sh"), "user hook kept");
-  assert.ok(!cmds.some((c) => c.includes("load-response-format.sh")), "no do hook injected into target settings");
+  assert.ok(!cmds.some((c) => c.includes("load-do-one.sh")), "no do hook injected into target settings");
   assert.equal(s.model, "opus");
   assert.ok(existsSync(join(claude, "settings.json.bak")), "backup created");
 });

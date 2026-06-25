@@ -31,9 +31,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/load-response-format.sh\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/do/modules/oppihtnias/hooks/oppihtnias-activate.js\"",
             "timeout": 10
-          },
+          }
+        ]
+      },
+      {
+        "hooks": [
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/load-do-one.sh\"",
@@ -62,15 +66,6 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/do-mon-tracker.js\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/inject-response-format.sh\"",
             "timeout": 10
           }
         ]
@@ -126,15 +121,6 @@
       }
     ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/validate-response-format.sh\"",
-            "timeout": 15
-          }
-        ]
-      },
       {
         "hooks": [
           {
