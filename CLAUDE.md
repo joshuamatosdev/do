@@ -55,8 +55,8 @@ ran `/do:run setup` — which is why the same hook can be loaded yet silent.
   `merge-settings`, `paths`, `version`, `which`. It is the logic behind the single command
   `commands/run.md` and the `setup` skill.
 - `hooks/` (top-level) = JS activators/trackers for the two sticky session modes, **compress** and **mon**.
-- `agents/` = 10 dispatchable subagents · `skills/` = 15 in-repo skills (4 more ship with modules,
-  19 total per README) · `workflows/` = 3 deterministic multi-agent scripts (`adr-spec.js`,
+- `agents/` = 10 dispatchable subagents · `skills/` = 17 in-repo skills (4 more ship with modules,
+  21 total per README) · `workflows/` = 3 deterministic multi-agent scripts (`adr-spec.js`,
   `adversarial-review.js`, `red-blue-sweep.js`), run with the Workflow tool by path.
 - `tools/` = standalone helpers: `plain-words.js` + `wordlist` (the compress plain-words check),
   `adr-spec-*` (the ADR skill), `yaml-lite.js`, `frontmatter-schema.js`.

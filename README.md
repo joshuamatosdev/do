@@ -13,7 +13,7 @@
 
 - Installs a **tiered response format** so answers match the weight of the turn.
 - Installs the **five moves** of the system and keeps them in context every session.
-- Ships **10 agents** and **19 skills** you dispatch on demand (full list below).
+- Ships **10 agents** and **21 skills** you dispatch on demand (full list below).
 - Wires **safety + integrity gates** as hooks: block harmful git, block stub/TODO writes,
   check the response, run an adversarial end-of-turn review.
 - Adds **opt-in modules** for memory, agent teams, completion gates, and more.
@@ -91,6 +91,7 @@ Loaded on demand. Invoke by name or `/do:<name>`.
 | `red-blue` | Run a live red/blue hardening team under one lead (authorized, local-only). |
 | `bb-methodology` | A five-phase bug-bounty workflow with per-phase tool routing. Authorized, scoped testing only. |
 | `security-arsenal` | A payload and bypass-table reference to check code against (never a green light to fire). |
+| `prompt-base` | Build a reusable, presaved prompt as a skill — author the six prompt-engineering slots once, fill in task + context per use. |
 | `do-route` | Route a task to the best-fit agent, team, or general-purpose. *(task-router module)* |
 | `do-team` | Run the engineering agents as a team to build a feature. *(agent-team module)* |
 | `do-remember` | Save a durable fact to the project's file-based memory. *(memory-discipline module)* |
