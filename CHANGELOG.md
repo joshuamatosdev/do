@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.22] — 2026-06-25
+
+### Added
+
+- **`prompt-base` skill** — a guided author for a reusable, presaved prompt as a registered skill: walk six prompt-engineering slots (persona, task, context, exemplar, format, tone) with draft-or-options at each, producing a `.claude/skills/<name>/SKILL.md` where only the task and context are supplied per use. A second mode promotes an existing `+sigle` into a registered skill (the `+promote` sigle now routes to it as its authoring engine). Catalogued in `README.md`.
+
+### Fixed
+
+- **Hook-test drive-path detection** (`tests/bash-paths.js`) — the helper now probes the running shell's real convention (WSL `/mnt/<d>` → git-bash `/<d>` → native) instead of treating a stray `/mnt/c` as WSL. Previously, paths rewritten to an unreadable form made the bash-hook suites fail-open under git-bash; this restored 48 failing tests to green.
+
 ## [0.1.21] — 2026-06-25
 
 ### Added
@@ -60,7 +70,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...HEAD
+[0.1.22]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...do--v0.1.22
 [0.1.21]: https://github.com/joshuamatosdev/do/compare/do--v0.1.20...do--v0.1.21
 [0.1.20]: https://github.com/joshuamatosdev/do/compare/do--v0.1.19...do--v0.1.20
 [0.1.19]: https://github.com/joshuamatosdev/do/releases/tag/do--v0.1.19
