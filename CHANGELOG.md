@@ -6,9 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.21] — 2026-06-25
+
 ### Added
 
 - **README "Security tools" note** — documents that the security skills (`bb-methodology`, `security-arsenal`, `red-blue`, `do:security-recon`) route to external security CLIs `do` does not bundle or require; all optional, authorized / local-only, with each skill's tool-routing table as the list.
+
+### Changed
+
+- **Frontier drain over deferred gates** — strengthens `validate-continuation` and codex-frontier guidance so agent-created rollout / flip / readiness prerequisites stay agent-runnable frontier work, not `[USER]` handoffs. Adds Windows/WSL bash-path test support for the hook suites.
 
 ## [0.1.20] — 2026-06-21
 
@@ -54,6 +60,7 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.20...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...HEAD
+[0.1.21]: https://github.com/joshuamatosdev/do/compare/do--v0.1.20...do--v0.1.21
 [0.1.20]: https://github.com/joshuamatosdev/do/compare/do--v0.1.19...do--v0.1.20
 [0.1.19]: https://github.com/joshuamatosdev/do/releases/tag/do--v0.1.19
