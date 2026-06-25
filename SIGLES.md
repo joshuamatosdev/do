@@ -60,10 +60,11 @@ Do: `+promote <name>` — confirm `## +<name>` exists, read that entry and any c
 decide whether it has earned promotion. Promote only when the procedure is stable, broadly reusable,
 better triggered as a skill than kept as memory, or needs supporting files/scripts/assets a sigle
 should not hold. Do not promote one-off project convention, an unstable idea, or a mechanical rule
-that should be enforced by tooling. If promoting, use `superpowers:writing-skills` and its testing
-workflow to create the skill in the appropriate Claude Code skill directory (project `.claude/skills`
-for repo-local behavior; user `~/.claude/skills` for personal cross-project behavior), then replace
-or remove the old sigle entry and update the Index. Do not claim auto-promotion: promotion is an
+that should be enforced by tooling. If promoting, run the `prompt-base` skill (Mode B) to author the
+engineered skill — it maps this entry's Purpose/Do/Proof into a `SKILL.md` and prunes the sigle — or
+use `superpowers:writing-skills` for the file-write/test workflow. Create the skill in the appropriate
+Claude Code skill directory (project `.claude/skills` for repo-local behavior; user `~/.claude/skills`
+for personal cross-project behavior), then replace or remove the old sigle entry and update the Index. Do not claim auto-promotion: promotion is an
 explicit act, not a native watcher or background pipeline.
 
 Proof: cite the original sigle entry, the promote/decline criteria applied, the created `SKILL.md`

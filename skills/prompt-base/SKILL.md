@@ -1,7 +1,7 @@
 ---
 name: prompt-base
-description: Guide the user to build a reusable, presaved prompt as a registered skill — author six prompt-engineering slots once (persona, task, context, exemplars, format, tone), so that per use only the task and context are supplied. Offers technique-backed options at each slot and lets the user choose. Produces a SKILL.md the user invokes later. Use to turn a recurring prompt into a saved skill, build a prompt template, or on "save this prompt as a skill", "make a base prompt", "/prompt-base".
-argument-hint: [what recurring task the prompt is for]
+description: Guide the user to build a reusable, presaved prompt as a registered skill — author six prompt-engineering slots once (persona, task, context, exemplars, format, tone), so that per use only the task and context are supplied; offers technique-backed options at each slot. Also UPGRADES a +sigle into a registered skill, on request or when you judge it has outgrown the catalog — mapping the sigle's procedure into an engineered SKILL.md and pruning the old entry. Produces a SKILL.md the user invokes later. Use to turn a recurring prompt into a saved skill, build a prompt template, promote/upgrade a +sigle to a skill, or on "save this prompt as a skill", "make a base prompt", "promote this sigle", "upgrade +name to a skill", "/prompt-base".
+argument-hint: [task to build a prompt for | promote <sigle-name>]
 ---
 
 # prompt-base — build a presaved prompt as a skill
@@ -14,6 +14,16 @@ ready to invoke by name.
 This is *technique-guided prompt authoring* — distinct from `+sigle` (lightweight procedures Claude
 runs) and from a generic skill scaffold. Every slot encodes a named prompting technique, so the saved
 prompt is engineered, not guessed.
+
+**Two modes:**
+
+- **Mode A — author from scratch** (default): build a new prompt skill by walking the six slots.
+- **Mode B — promote a sigle**: upgrade an existing `+name` sigle into a registered skill — when the
+  user asks, or when you judge a sigle has outgrown the catalog and suggest it. Reuses the same slots
+  and output, then prunes the sigle.
+
+Mode B is the engineered authoring engine behind the `+promote` sigle: `+promote` decides *whether* a
+sigle should graduate, then runs this skill to build the `SKILL.md`.
 
 ## The model — two tiers of slot
 
@@ -40,7 +50,7 @@ baked body tells the model to apply the persona, format, tone, and exemplars to 
 | **Format** | output contract | Structure (sections / JSON / table / length) — makes output usable and checkable. |
 | **Tone** | style control | Register and voice matched to the reader. |
 
-## How to run it
+## Mode A — author a new prompt skill
 
 ### Step 1 — Frame the prompt
 
@@ -153,9 +163,47 @@ Apply all of the above to the user's current request. Their message is the
 is missing, ask for it before producing the output.
 ```
 
+## Mode B — promote a sigle (`+name`) to a skill
+
+Upgrade an existing sigle into a registered skill — when the user asks ("promote `+name`", "upgrade
+this sigle"), or when you notice a sigle has earned it and **suggest** promotion.
+
+### When to suggest promotion
+
+A sigle deserves promotion when it is **stable**, **broadly reusable**, **better triggered as a skill
+than recalled as memory**, or **needs supporting files / scripts / assets** a sigle should not hold.
+Do NOT promote a one-off project convention, an unstable idea, or a mechanical rule better enforced by
+tooling — say so and leave it a sigle. This is the same gate as the `+promote` sigle.
+
+### Steps
+
+1. **Locate** — read the `## +<name>` entry in the project's sigle catalog (`SIGLES.md`): its
+   Purpose / Do / Proof, plus any tooling it cites. If the name is not in the Index, stop and say so.
+2. **Decide** — apply the criteria above. If it has not earned promotion, decline with the reason and
+   stop — do not promote on reflex.
+3. **Map the sigle into the slots** — a sigle is a *procedure*, so the mapping is:
+   - *Purpose* → the skill **description** (sharpen it for auto-trigger, as in Mode A Step 4).
+   - *Do* → the **Task** body (+ any **Format** the steps imply).
+   - *Proof* → the **Done / verification** line.
+   - **Persona / Tone / Exemplars** → ask or infer; add only where they sharpen the result.
+   - Mark any per-use input as the **fill-in**, same as Mode A.
+4. **Write** `.claude/skills/<name>/SKILL.md` (output skeleton above). For a heavier write or a skill
+   that needs assets or tests, hand the file write to `superpowers:writing-skills`.
+5. **Prune the sigle** — edit out (or replace) the `## +<name>` entry in `SIGLES.md` **and** its Index
+   line, so the procedure lives in exactly one place. Never leave the sigle and the skill as duplicates.
+6. **Verify** — frontmatter valid, name matches the directory, description specific; offer a dry run.
+
+Promotion is an explicit act — never claim a sigle auto-promotes.
+
 ## Done when
 
-The `SKILL.md` is written to the user's `.claude/skills/<name>/`, every slot is resolved or skipped,
-the fill-in is marked, the description is specific, and (offered) a dry run shows the baked prompt
-producing the intended output. When the prompt outgrows a single file or needs supporting assets,
-hand off to `superpowers:writing-skills` or `+promote` to graduate it.
+**Mode A:** the `SKILL.md` is written to the user's `.claude/skills/<name>/`, every slot is resolved or
+skipped, the fill-in is marked, the description is specific, and (offered) a dry run shows the baked
+prompt producing the intended output.
+
+**Mode B (promotion):** all of the above, **plus** the source sigle is pruned from `SIGLES.md` and its
+Index — the procedure now lives only as the skill; or, if you declined, the reason is stated and the
+sigle is left intact.
+
+When a prompt outgrows a single file or needs supporting assets, hand off to
+`superpowers:writing-skills`.
