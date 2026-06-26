@@ -82,3 +82,12 @@ test("README has a License section with Apache-2.0 and copyright", () => {
     "README License section must reference the LICENSE file"
   );
 });
+
+// (5) Top warning must name the autonomy surface: skills/agents plus hooks.
+test("README warning ties unexpected autonomous behavior to skills/agents with hooks", () => {
+  const warning = README.split("\n").find((l) => l.includes("> **Warning:**")) || "";
+  assert.ok(warning, "README must keep a top-level warning");
+  assert.match(warning, /unexpected autonomous behavior/i);
+  assert.match(warning, /skills\/agents/i);
+  assert.match(warning, /hooks/i);
+});
