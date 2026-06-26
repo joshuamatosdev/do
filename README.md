@@ -8,7 +8,7 @@
 
 `do` is a Claude Code plugin. One command installs a portable engineering system.
 
-- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.23`
+- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.24`
 
 ---
 ## What it does
@@ -92,6 +92,8 @@ Use it for:
 - A hard bug or design call after local repo evidence is not enough.
 - A repeated failure after two serious attempts.
 - A load-bearing assumption before an irreversible or expensive step.
+- Stop-hook surfaced `[DO:MON]` decisions that need code, ideas, definition of done, acceptance
+  criteria, tradeoffs, or a long-term scalable solution.
 - Manual consults with `/do:run mon <question>`.
 
 ## The five moves
@@ -204,7 +206,7 @@ Modules are chosen at `/do:run setup` or added with
 | `completion-gates` | evidence gates: schema/DB, security, API/contract, operations. | — |
 | `memory-discipline` | File-based memory: a `MEMORY.md` index + one-fact-per-file + `do-remember` (write) and `do-memory-audit` (review). | — |
 | `codex-integrity` | A Stop hook that sends the (scrubbed) assistant turn text to an external Codex LLM for adversarial review (read-only file access); fail-open to `change-skeptic` when Codex is absent. | `codex` CLI |
-| `codex-frontier` | A Stop hook that drains open non-`[USER]` frontier items and aligns changed code to its registered ADR / grounded-docs spec via a Codex consult; fail-open. | `jq`, `codex` CLI |
+| `codex-frontier` | A Stop hook that drains open non-`[USER]` frontier items and aligns changed code to its registered ADR / grounded-docs spec via a DO:MON consult; fail-open. | `jq` CLI |
 | `commit-doctor` | Auto-heals a failed `git commit` (classify → fix → retry, never `--no-verify`). | `jq` CLI |
 | `git-gate` | PreToolUse (Bash\|PowerShell) default-deny git allowlist: blocks destructive / history-rewriting git (`reset --hard`, `checkout`, `switch`, `rebase`, `merge`, force-push, branch create/delete, `stash`, `--no-verify`/`--amend`); allows read-only + safe forms (add, commit, push non-force, fetch, pull). | `node` |
 | `task-router` | The `do-route` skill. | — |
@@ -237,7 +239,7 @@ AFTER A BASH RUN  (PostToolUse)
 
 TURN END  (Stop)
   validate-continuation.sh    -> no work handed back; not ending on a question
-  codex-stop.sh               -> Codex integrity review + frontier drain
+  codex-stop.sh               -> Codex integrity review + DO:MON frontier drain
 ```
 
 ## How `do:mon` works

@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.24] — 2026-06-26
+
+### Changed
+
+- **DO:MON frontier decisions** — hard architecture, design, outward-impact, acceptance-criteria,
+  tradeoff, or scalability decisions are now surfaced as `[DO:MON]` and routed through `do:mon`
+  instead of being parked as `[USER]`. The stop-hook brief asks ChatGPT for code, implementation
+  ideas, definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution,
+  then tells the agent to verify and continue.
+- **`codex-frontier` dependency surface** — frontier draining and ADR/spec alignment now use
+  `DO:MON` as the primary advisory reasoner, with `codex --decide` only as fallback, so the
+  `codex-frontier` module no longer declares the Codex CLI as a required soft dependency.
+
 ## [0.1.23] — 2026-06-26
 
 ### Added
@@ -84,7 +97,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...HEAD
+[0.1.24]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...do--v0.1.24
 [0.1.23]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...do--v0.1.23
 [0.1.22]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...do--v0.1.22
 [0.1.21]: https://github.com/joshuamatosdev/do/compare/do--v0.1.20...do--v0.1.21

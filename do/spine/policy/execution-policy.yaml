@@ -467,8 +467,8 @@ anti_patterns:
     pattern: Agent-created flip gate handoff — calling a feature complete, then asking the user
       whether to build rollout / freshness / backfill / least-privilege role work later
     why: If the prerequisite is needed for the requested feature to work coherently, it is frontier
-      work; finish it now or mark the feature incomplete. Only true irreversible or outward-facing
-      choices get [USER].
+      work; finish it now or mark the feature incomplete. Hard technical/design choices get
+      [DO:MON] and a do:mon consult; only true user-authority approvals get [USER].
   - phase: 6
     pattern: It compiled treated as done
     why: Not verification
@@ -544,7 +544,7 @@ enforcement_surface:
     - hook: codex-stop.sh
       event: Stop
       module: codex-frontier
-      note: drains open non-[USER] frontier items + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_FRONTIER_OFF=1
+      note: drains open non-[USER] frontier items through DO:MON + aligns changed code to its ADR/spec (@docscheck); fail-open, kill switch CODEX_FRONTIER_OFF=1
     - hook: oppihtnias-activate.js
       event: SessionStart
       module: oppihtnias
@@ -624,8 +624,8 @@ module_and_workflow_surface:
     - id: codex-frontier
       module: codex-frontier
       when: a turn left open non-[USER] frontier items, OR changed code governed by a registered ADR / grounded-docs spec
-      installs: Stop hook (codex-stop.sh); needs jq + codex
-      does: drains safe/relevant/tool-executable frontier items; aligns changed code to its ADR/spec (@docscheck); fail-open
+      installs: Stop hook (codex-stop.sh); needs jq
+      does: drains safe/relevant/tool-executable frontier items through DO:MON; aligns changed code to its ADR/spec (@docscheck); fail-open
       phase: 9
     - id: commit-doctor
       module: commit-doctor

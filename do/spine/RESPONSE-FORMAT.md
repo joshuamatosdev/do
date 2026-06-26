@@ -38,7 +38,7 @@ Tier | Trigger | Required floor
 
 1. **Ground every claim in facts from the code** — cite file:line, command output, or file. No recall-only claims. (At REPORT/FULL this is the `## Proof` section.)
 
-2. **Codex** — if `codex-integrity` is installed, the unified Stop hook `codex-stop.sh` runs the Codex integrity gate. Use the in-response `codex` skill only for genuine judgment calls you cannot verify locally, or when a closed gate requires `codex --decide`; routine grep/read/command-verifiable turns do not need a second Codex call.
+2. **External reasoners** — if `codex-integrity` is installed, the unified Stop hook `codex-stop.sh` runs the Codex integrity gate. Use `do:mon` for hard technical/design decisions you cannot settle locally, especially decisions that need code, ideas, definition of done, acceptance criteria, tradeoffs, or a long-term scalable solution. Use the in-response `codex` skill only for genuine judgment calls you cannot verify locally, as a `do:mon` fallback, or when a closed gate requires `codex --decide`; routine grep/read/command-verifiable turns do not need a second reasoner call.
 
 ---
 
@@ -56,9 +56,12 @@ The concrete next actions **to fulfill the request** — and you TAKE them this 
 you don't list them and stop. On a non-blocking local detail (a name, a format), do not guess or
 assume — gain certainty from the code and convention and state the fact; when a fact is not in hand,
 form a hypothesis, state it, and test it. Do not stop to ask a detail you can settle. `- [x] None —
-request satisfied` is a clean, valid terminal. Reserve a hand-back for a genuinely irreversible or
-outward-facing decision, tagged `- [ ] [USER]`; a blocking uncertainty that survives rigorous testing
-plus `do:style` / `do:mon` escalates with `codex --decide`. "Awaiting your direction" is never a
+request satisfied` is a clean, valid terminal. Surface hard technical/design decisions as
+`- [ ] [DO:MON] <decision>` and immediately run `do:mon` rather than waiting for the user. The
+consult prompt should provide relevant code/evidence and ask for code, implementation ideas,
+definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution. Reserve
+`- [ ] [USER]` only for authority the agent cannot exercise: credentials, legal/business approval,
+destructive action, or public-release/go-no-go approval. "Awaiting your direction" is never a
 terminal state.
 
 ### `## Proof`
@@ -84,9 +87,12 @@ Work frontier:
 Execution loop:
 `objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
 
-The only sanctioned open item is a genuine user-decision
-`- [ ] [USER] <the specific irreversible or outward-facing decision only the user can make>`.
-A blocker escalates to `codex --decide`.
+The only sanctioned terminal open item is a genuine user-authority decision
+`- [ ] [USER] <the specific approval/authority only the user can provide>`. Hard architecture,
+design, outward-impact, acceptance-criteria, tradeoff, or scalability decisions are not terminal
+user gates; surface them as `- [ ] [DO:MON] <decision>`, consult `do:mon`, verify the answer, choose,
+and continue. A blocker escalates to `do:mon`; if `do:mon` is unavailable, use `codex --decide` or
+`do:change-skeptic`.
 
 Do not turn agent-created work into a user gate. Rollout, flip-readiness, freshness, backfill,
 least-privilege role, reconciler, migration, or operations prerequisites discovered while fulfilling
@@ -153,7 +159,7 @@ Edge case test | |
 
 ## Stop-Work Checklist (confirm before ending a turn)
 
-- Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [USER]` irreversible / outward-facing decisions. Do not tag safe tool work, pushable blockers, or beneath-attention trivia as `[USER]`. Open non-`[USER]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `codex --decide` (PROCEED → keep going; HOLD → return). For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
+- Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [USER]` authority decisions the agent cannot make. Do not tag safe tool work, pushable blockers, technical design choices, or beneath-attention trivia as `[USER]`. Mark hard design/architecture/tradeoff/scalability decisions as `[DO:MON]`, consult `do:mon`, verify the answer, and keep going. Open non-`[USER]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `do:mon` first, then `codex --decide` / `do:change-skeptic` only as fallback. For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
 
 - Agent-created rollout / flip / readiness gates are not terminal user decisions. If they are needed
   for the requested feature to be coherent, drain them or mark the feature incomplete.

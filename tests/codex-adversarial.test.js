@@ -41,6 +41,25 @@ function transcript(trivial) {
   return bashPath(f);
 }
 
+function frontierTranscript() {
+  const dir = mkdtempSync(join(tmpdir(), "do-frontier-tx-"));
+  const lines = [
+    JSON.stringify({ type: "user", message: { content: "optimize the workflow" } }),
+    JSON.stringify({
+      type: "assistant",
+      message: {
+        content: [{
+          type: "text",
+          text: "## Remaining Steps\n- [ ] [DO:MON] decide the stop-hook design tradeoffs",
+        }],
+      },
+    }),
+  ];
+  const f = join(dir, "t.jsonl");
+  writeFileSync(f, lines.join("\n") + "\n");
+  return bashPath(f);
+}
+
 // Run the hook; return { blocked, stdout }.
 function runHook(e, tf, { stopActive = false } = {}) {
   const input = JSON.stringify({ transcript_path: tf, stop_hook_active: stopActive });
@@ -130,4 +149,17 @@ test("advisory reminder: silent when adversarial ON (default), emits when OFF (s
   assert.equal((on.stderr || "").trim(), "", "no reminder when adversarial mode is ON (default)");
   const off = spawnSync("bash", [REMINDER], { input: "{}", env: env("off"), encoding: "utf8" });
   assert.match(off.stderr || "", /codex-integrity/, "reminder still emits when mode is OFF");
+});
+
+test("codex-frontier routes open decisions to DO:MON with a senior tech-lead brief", { skip: SKIP }, () => {
+  const r = runHook(env("default", ["codex-frontier"]), frontierTranscript());
+  assert.equal(r.blocked, true);
+  assert.match(r.stdout, /DO:MON/);
+  assert.match(r.stdout, /do:mon/);
+  assert.match(r.stdout, /senior tech-lead/i);
+  assert.match(r.stdout, /provide code/i);
+  assert.match(r.stdout, /definition of done/i);
+  assert.match(r.stdout, /acceptance criteria/i);
+  assert.match(r.stdout, /trade-?offs/i);
+  assert.match(r.stdout, /long-term scalable/i);
 });

@@ -8,10 +8,10 @@
 #          flagged. Codex unavailable / scrub-fail -> stderr advisory naming do:change-skeptic.
 #        - advisory mode (flag "off"):     emit a stderr reminder to run the review (no Codex call).
 #   B. codex-frontier (module: codex-frontier)
-#        - discovered frontier + ADR/spec alignment -> BLOCK with a directive to consult Codex.
+#        - discovered frontier + ADR/spec alignment -> BLOCK with a directive to consult DO:MON.
 #
 # Behavior-preserving merge: each concern keeps its own Codex path (integrity calls Codex in-hook;
-# codex-frontier blocks and Claude makes the consult). The shared prologue (recursion guard, manifest
+# codex-frontier blocks and Claude makes the reasoner consult). The shared prologue (recursion guard, manifest
 # gate, transcript) runs ONCE. When both concerns BLOCK in one turn their reasons are combined into a
 # SINGLE block. FAIL-OPEN throughout: any infra failure degrades to advisory, never a hard wedge.
 set -uo pipefail
@@ -157,16 +157,17 @@ if [ "$frontier_on" = 1 ] && [ "${CODEX_FRONTIER_OFF:-}" != "1" ] && [ "$have_tr
     { [ -n "$code_changed" ] && [ "$adr_present" = "1" ]; } && align=1
 
     if [ -n "$frontier" ] || [ -n "$align" ]; then
+      do_mon_brief='DO:MON automated reasoner: run the do:mon skill (ChatGPT). Send the smallest scrubbed prompt that includes relevant code, local evidence, failing output, and the specific decision. Ask it to act as a senior tech-lead and AI creator of transforms: provide code where useful, discuss implementation ideas, definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution. Treat the answer as advisory; verify it against code/tests, choose the best path, then act this turn. The user can interrupt the session if they disagree; do not stop waiting for user interjection.'
       if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "1" ]; then
-        fix_clause='ALIGN: Codex edits directly only when ASK_CODEX_ALLOW_EDITS=1. Run consult and verify result. If Codex advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
+        fix_clause='ALIGN: consult DO:MON first; if you explicitly choose the Codex edit path under ASK_CODEX_ALLOW_EDITS=1, verify the direct edits before continuing. If the advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
       else
-        fix_clause='ALIGN: have Codex propose the fix, apply it yourself, then verify. If Codex advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
+        fix_clause='ALIGN: have DO:MON propose the fix, apply it yourself, then verify. If DO:MON advice is insufficient, use codex --decide or dispatch do:distinguished-engineer / do:test-engineer and continue this turn. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
       fi
       sections=()
       [ -n "$frontier" ] && sections+=("$(printf 'WORK FRONTIER:\n%s\n1. Finish the requested objective.\n2. Classify discovered work.\n3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.\n4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.\nAgent-created rollout / flip / readiness gates are frontier work, not terminal user decisions.\nExecution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.' "$frontier")")
       [ -n "$align" ] && sections+=("$(printf 'ADR/SPEC: changed code has a registered ADR/spec. Per @docscheck, review via docs/adr or grounded-docs lookup/cite. If divergent, %s If no source governs, say so and proceed.' "$fix_clause")")
       body=$(printf '%s\n\n' "${sections[@]}")
-      block_reasons+=("$(printf '[CODEX-FRONTIER] Before stopping:\n\n%s\nConsult Codex for these review(s), weigh advice against code/docs, then act this turn. Fires once.' "$body")")
+      block_reasons+=("$(printf '[CODEX-FRONTIER] Before stopping:\n\n%s\nConsult DO:MON via the do:mon skill for these review(s), weigh advice against code/docs, then act this turn. %s Fires once.' "$body" "$do_mon_brief")")
     fi
   fi
 fi
