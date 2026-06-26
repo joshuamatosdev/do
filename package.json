@@ -1,6 +1,6 @@
 {
   "name": "@joshuamatosdev/do",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "description": "A portable engineering workflow for AI-assisted engineering, installed as a Claude Code plugin.",
   "license": "Apache-2.0",
   "author": "Joshua Matos (https://github.com/joshuamatosdev)",

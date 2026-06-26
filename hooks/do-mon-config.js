@@ -7,7 +7,7 @@ const MAX_FLAG_BYTES = 8;
 const MAX_CONFIG_BYTES = 64 * 1024;
 
 const DEFAULT_CONFIG = {
-  browser: null, // set on first detection: "claude-in-chrome" | other MCP browser
+  browser: null, // set after first successful driver: "built-in-claude-browser" | "claude-in-chrome" | other MCP browser
   defaultReasoner: "chatgpt",
   reasoners: [
     {

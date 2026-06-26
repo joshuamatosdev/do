@@ -5,11 +5,27 @@ live DOM — the DOM drifts; prefer role/text anchors over brittle CSS, and be d
 
 ## Connect
 
-1. Load the `claude-in-chrome` tools (one ToolSearch with the core set:
-   `tabs_context_mcp,navigate,computer,read_page,get_page_text`).
-2. `tabs_context_mcp { createIfEmpty: true }` to learn current tabs.
-3. `navigate { url: "https://chatgpt.com/", tabId }`.
-4. One `computer { action: "screenshot" }` to confirm the page loaded and is **logged in** (Pro
+### Browser driver priority
+
+1. Try the **built-in Claude browser** first. Use the host's native browser / computer-control tools
+   to open a fresh `https://chatgpt.com/` tab and confirm the page is logged in.
+2. If the built-in Claude browser is unavailable, cannot navigate, cannot read the page, or does not
+   reach the logged-in ChatGPT session, announce the switch before trying another driver:
+   `do:mon switching browser driver: built-in Claude browser -> <next driver>; cause: <specific cause>.`
+3. Look for a **browser MCP** fallback. Prefer `claude-in-chrome` when present because it drives the
+   user's existing Chrome profile; otherwise try another connected browser MCP that exposes
+   navigation, computer control, screenshots, and text extraction.
+4. Persist the chosen driver in `~/.claude/state/do-mon/config.json` only after it reaches a logged-in
+   ChatGPT session. If a persisted driver later fails, announce `switching browser driver` with the
+   cause and repeat this priority order.
+
+For `claude-in-chrome`, load the tools with one ToolSearch for:
+`tabs_context_mcp,navigate,computer,read_page,get_page_text`.
+Then:
+
+1. `tabs_context_mcp { createIfEmpty: true }` to learn current tabs.
+2. `navigate { url: "https://chatgpt.com/", tabId }`.
+3. One `computer { action: "screenshot" }` to confirm the page loaded and is **logged in** (Pro
    shows the "What's on the agenda today?" composer). If a login/auth screen shows → not logged in.
 
 ## Send

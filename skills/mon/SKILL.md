@@ -1,14 +1,15 @@
 ---
 name: mon
-description: Consult an external LLM reasoner (ChatGPT Pro first) by driving the logged-in browser via claude-in-chrome. Use when do:mon mode is on and you are stuck, on a hard problem or bug, or about to bet on a shaky assumption; or on /do:mon, /do mon, "ask chatgpt", "consult the reasoner". Browser sibling of the codex CLI skill; the answer is advisory, not authority.
+description: 'Consult an external LLM reasoner (ChatGPT Pro first) by driving the logged-in browser through Claude browser tooling. Use when do:mon mode is on and you are stuck, on a hard problem or bug, or about to bet on a shaky assumption; or on /do:mon, /do mon, "ask chatgpt", "consult the reasoner". Browser sibling of the codex CLI skill; the answer is advisory, not authority.'
 ---
 
 # do:mon — external reasoner consult
 
 Drive the user's **already-logged-in** browser (`chatgpt.com` first) to get a second opinion from
-a strong external reasoner. The browser/subscription sibling of the `codex` CLI skill. Its answer
-is **advisory** — weigh and test it, never obey it. The user stays logged in; this skill never logs
-in or handles credentials.
+a strong external reasoner. Prefer the **built-in Claude browser** first; if that driver is absent
+or fails, switch to a browser MCP driver. The browser/subscription sibling of the `codex` CLI skill.
+Its answer is **advisory** — weigh and test it, never obey it. The user stays logged in; this skill
+never logs in or handles credentials.
 
 ## When this applies
 
@@ -35,9 +36,17 @@ in or handles credentials.
 ## Consult flow (single reasoner)
 
 1. **Ensure a browser.** Read config (`hooks/do-mon-config.js` → `~/.claude/state/do-mon/config.json`).
-   If `browser` is unset, detect: `list_connected_browsers` / `tabs_context_mcp`. Prefer
-   `claude-in-chrome` (it drives the user's existing logged-in Chrome). Fall back to another MCP
-   browser only if it reaches the logged-in session; else ask the user to connect one. Persist the choice.
+   Try drivers in this order:
+   - **built-in Claude browser** — use Claude's built-in browser / computer-control surface when it is
+     available and can reach the logged-in ChatGPT session.
+   - **Configured browser driver** — if `browser` is set, retry that driver once when it differs from
+     the built-in Claude browser.
+   - **Browser MCP fallback** — detect available browser MCP tools (`list_connected_browsers`,
+     `tabs_context_mcp`, or equivalent), try `claude-in-chrome` first, then another browser MCP.
+   Before changing drivers, alert the user exactly once with the driver and cause, e.g.
+   `do:mon switching browser driver: built-in Claude browser -> claude-in-chrome; cause: ChatGPT tab not reachable.`
+   Persist the winning driver only after it reaches the logged-in session. If no driver reaches it,
+   ask the user to connect or log in to a browser.
 2. **Open a fresh chat** on the reasoner's `url` (clean context).
 3. **Assemble the prompt** per the egress policy; **scrub it**; make it a **single block with no raw
    newlines** (in ChatGPT a newline-Enter submits early).
@@ -66,8 +75,8 @@ For a genuinely complex problem — your judgment or the user's — escalate fro
 an **agent-team**, reusing the existing `agent-team` module / `do-team` skill (needs
 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`). Do NOT reimplement teams.
 
-- **The lead owns the browser.** Teammates do not get `mcpServers`, so only the lead has
-  `claude-in-chrome`. One driver (lead), many problem-owners (teammates) — serial by design.
+- **The lead owns the browser driver.** Teammates do not get the browser surface. One driver (lead),
+  many problem-owners (teammates) — serial by design.
 - **Relay:** a teammate relays its sub-problem to the lead (the agent-team `SendMessage` channel,
   prompt-only + scrubbed); the lead consults in a **fresh ChatGPT thread per sub-problem**, then
   relays the advisory answer back.
@@ -80,7 +89,9 @@ an **agent-team**, reusing the existing `agent-team` module / `do-team` skill (n
 - usage-capped → report it; Cloudflare/bot challenge → report it, don't try to defeat it;
 - done-signal never reached / timeout (~15 min) → report partial + timeout;
 - DOM anchors missing → report adapter drift (selectors need updating);
-- no browser → ask the user to connect one.
+- active browser driver fails → announce `switching browser driver` with the cause, then try the next
+  built-in / browser MCP candidate;
+- no browser driver reaches a logged-in session → ask the user to connect or log in to one.
 
 Browser safety: only type into the chat box; never click destructive UI; never trigger native
 `alert`/`confirm`/`prompt` dialogs (they freeze the extension).

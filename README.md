@@ -6,7 +6,7 @@
 
 `do` is a Claude Code plugin. One command installs a portable engineering system.
 
-- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.22`
+- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.23`
 
 ---
 ## What it does
@@ -81,8 +81,9 @@ score with tools/adr-spec-rubric.js, then human review
 ### do:mon mode
 
 `do:mon` is the sticky external-reasoner mode. Turn it on with `/do:run mon on`; when the session
-hits a high-value moment, Claude may open a fresh ChatGPT consult through your logged-in browser,
-send a scrubbed prompt, and treat the answer as advisory evidence to verify against the repo.
+hits a high-value moment, Claude may open a fresh ChatGPT consult through the built-in Claude browser
+or a browser MCP fallback, send a scrubbed prompt, and treat the answer as advisory evidence to verify
+against the repo. If it changes browser drivers, it tells you the cause first.
 
 Use it for:
 
@@ -250,7 +251,8 @@ browser.
    +--------------------------------------------+
    | Claude (this session)                      |
    |  1. scrub the prompt (no .env / keys / PII)|
-   |  2. drive your logged-in Chrome            |   via claude-in-chrome
+   |  2. drive your logged-in browser           |   built-in Claude browser first;
+   |     (fallback: browser MCP)                |   announce switch + cause
    +--------------------------------------------+
                   |  prompt-only by default; each consult announced
                   v

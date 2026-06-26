@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.23] — 2026-06-26
+
+### Added
+
+- **README workflow callouts** — highlights Spec YOLO mode near the top of the README, including the
+  20-section ADR + Implementation Spec contract table and an ASCII flow diagram, plus a `do:mon`
+  mode callout with concrete use cases.
+
+### Changed
+
+- **`do:mon` browser driver policy** — the skill now tries the built-in Claude browser first, falls
+  back to browser MCP tooling when that driver is unavailable or fails, and requires an explicit
+  user alert naming the browser-driver switch and cause before changing drivers.
+
 ## [0.1.22] — 2026-06-25
 
 ### Added
@@ -70,7 +84,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...HEAD
+[0.1.23]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...do--v0.1.23
 [0.1.22]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...do--v0.1.22
 [0.1.21]: https://github.com/joshuamatosdev/do/compare/do--v0.1.20...do--v0.1.21
 [0.1.20]: https://github.com/joshuamatosdev/do/compare/do--v0.1.19...do--v0.1.20

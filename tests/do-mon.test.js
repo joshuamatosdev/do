@@ -144,6 +144,10 @@ test("mon SKILL.md states the load-bearing invariants", () => {
   assert.ok(t.includes("no newlines") || t.includes("single block"), "no-newline prompt rule");
   assert.ok(t.includes("chatgpt-adapter"), "points at the adapter reference");
   assert.ok(t.includes("agent-team"), "documents the agent-team escalation seam");
+  assert.ok(t.includes("built-in claude browser"), "prefers the built-in Claude browser first");
+  assert.ok(t.includes("browser mcp"), "falls back to browser MCP tools");
+  assert.ok(t.includes("switching browser driver"), "requires an explicit switch notice");
+  assert.ok(t.includes("cause"), "requires the switch cause to be named");
   assert.ok(!t.includes("do:codex"), "must not dangle a do:codex reference");
   assert.ok(!t.includes("do:do-team") && !t.includes("do:team"), "must not dangle a do: team ref");
 });
@@ -156,6 +160,9 @@ test("chatgpt-adapter.md carries the grounded drive heuristics", () => {
   assert.match(t, /chatgpt\.com/);
   assert.match(t, /b6b946f2/, "cites the source session");
   assert.ok(/minute/i.test(t), "states the multi-minute latency reality");
+  assert.match(t, /built-in Claude browser/, "tries Claude's built-in browser first");
+  assert.match(t, /browser MCP/i, "falls back to browser MCP tools");
+  assert.match(t, /switching browser driver/i, "requires an explicit switch notice");
 });
 
 function runHook(file, { prompt, configDir }) {
