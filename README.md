@@ -2,6 +2,8 @@
 ##### DoctrineOne Labs
 ##### Author: Joshua Matos ([@joshuamatosdev](https://github.com/joshuamatosdev))
 
+> **Warning:** Using this plugin can sometimes lead to unexpected automated agent behavior.
+
 **DO: Make Claude Code engineer better.**
 
 `do` is a Claude Code plugin. One command installs a portable engineering system.
