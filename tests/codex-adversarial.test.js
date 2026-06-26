@@ -162,4 +162,5 @@ test("codex-frontier routes open decisions to DO:MON with a senior tech-lead bri
   assert.match(r.stdout, /acceptance criteria/i);
   assert.match(r.stdout, /trade-?offs/i);
   assert.match(r.stdout, /long-term scalable/i);
+  assert.match(r.stdout, /Clean up agent-owned processes before stopping/);
 });

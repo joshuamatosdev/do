@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.25] — 2026-06-26
+
+### Changed
+
+- **Stop-hook process cleanup guidance** — `validate-continuation` and `codex-frontier` now tell
+  agents to clean up agent-owned dev servers, watchers, worker pools, helper shells, and background
+  toolchain commands before stopping, while preserving shared or user-owned processes unless the
+  user explicitly authorizes killing them.
+
 ## [0.1.24] — 2026-06-26
 
 ### Changed
@@ -97,7 +106,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...HEAD
+[0.1.25]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...do--v0.1.25
 [0.1.24]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...do--v0.1.24
 [0.1.23]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...do--v0.1.23
 [0.1.22]: https://github.com/joshuamatosdev/do/compare/do--v0.1.21...do--v0.1.22

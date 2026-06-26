@@ -12,6 +12,10 @@ work frontier rule and reasoner brief:
 
 4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.
 
+Clean up agent-owned processes before stopping. Terminate dev servers, watchers, worker pools,
+hook/helper shells, and background toolchain commands you started; do not kill shared or user-owned
+processes unless the user explicitly authorizes it.
+
 Execution loop: `objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
 
 For hard architecture, design, outward-impact, acceptance-criteria, tradeoff, or scalability

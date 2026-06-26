@@ -25,11 +25,13 @@ const FRONTIER_STEPS = [
   "4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.",
 ];
 const FRONTIER_LOOP = "objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop";
+const PROCESS_CLEANUP = "Clean up agent-owned processes before stopping.";
 function assertFrontierLanguage(out) {
   for (const step of FRONTIER_STEPS) {
     assert.ok(out.includes(step), `reason must include exact frontier step: ${step}`);
   }
   assert.ok(out.includes(FRONTIER_LOOP), "reason must teach the machine execution loop");
+  assert.ok(out.includes(PROCESS_CLEANUP), "reason must require cleanup of agent-owned processes");
 }
 
 // Temp project WITH the spec (self-gate passes).
