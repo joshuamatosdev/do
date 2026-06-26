@@ -32,6 +32,65 @@ After setup, `/do:run` drives everything (see [Commands](#commands)).
 
 ---
 
+## Callouts
+
+### Spec YOLO mode
+
+`/adr spec --yolo` turns the ADR + Implementation Spec path into an autonomous run. A workflow lead
+reads the source, sends `do:` subagents through recon, decision resolution, section drafting, and
+adversarial verification, then assembles one markdown execution contract. Use it when you need a
+complete implementation spec but want the system to resolve the usual interactive questions itself;
+the human review happens after the scored document is produced.
+
+The generated spec follows the 20-section contract:
+
+| Sections 1-5 | Sections 6-10 | Sections 11-15 | Sections 16-20 |
+|---|---|---|---|
+| 1. Executive Direction | 6. Functional Requirements | 11. Implementation Plan | 16. Traceability Matrix |
+| 2. Context and Problem Statement | 7. Non-Functional Requirements | 12. Test and Verification Strategy | 17. Engineering Backlog |
+| 3. Scope | 8. Domain Component Specification | 13. Definition of Done | 18. Appendix A — Source Evidence Summary |
+| 4. Architecture Decision Record | 9. Domain Workflow Specification | 14. Rollout and Rollback | 19. Appendix B — Glossary |
+| 5. Target Architecture | 10. Settings, Flags, and Configuration | 15. Risk Register | 20. Final Release Gate |
+
+<br />
+
+```
+source report / repo
+        |
+        v
+  adr-spec lead
+        |
+        +--> recon lenses read code/docs/tests
+        |
+        +--> plan sections + open decisions
+        |
+        +--> resolve decisions with no prompts
+        |
+        +--> draft sections to the template floors
+        |
+        +--> adversarial verify + one redraft pass
+        |
+        v
+ADR + Implementation Spec markdown
+        |
+        v
+score with tools/adr-spec-rubric.js, then human review
+```
+
+
+### do:mon mode
+
+`do:mon` is the sticky external-reasoner mode. Turn it on with `/do:run mon on`; when the session
+hits a high-value moment, Claude may open a fresh ChatGPT consult through your logged-in browser,
+send a scrubbed prompt, and treat the answer as advisory evidence to verify against the repo.
+
+Use it for:
+
+- A hard bug or design call after local repo evidence is not enough.
+- A repeated failure after two serious attempts.
+- A load-bearing assumption before an irreversible or expensive step.
+- Manual consults with `/do:run mon <question>`.
+
 ## The five moves
 
 The system.
