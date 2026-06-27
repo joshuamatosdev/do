@@ -15,7 +15,7 @@
 
 - Installs a **tiered response format** so answers match the weight of the turn.
 - Installs the **five moves** of the system and keeps them in context every session.
-- Ships **10 agents** and **22 skills** you dispatch on demand (full list below).
+- Ships **10 agents** and **23 skills** you dispatch on demand (full list below).
 - Wires **safety + integrity gates** as hooks: block harmful git, block stub/TODO writes,
   check the response, run an adversarial end-of-turn review.
 - Adds **opt-in modules** for memory, agent teams, completion gates, and more.
@@ -157,6 +157,7 @@ Loaded on demand. Invoke by name or `/do:<name>`.
 | `security-arsenal` | A payload and bypass-table reference to check code against (never a green light to fire). |
 | `prompt-base` | Build a reusable, presaved prompt as a skill — author the six prompt-engineering slots once, fill in task + context per use; or promote a `+sigle` into a registered skill. |
 | `prompt-builder` | Build ONE structured prompt now — pick from six components (role + task, context, instructions, example, repeated critical info, anti-hallucination block) and assemble them in order. |
+| `terminal-check` | The pre-stop self-check: classify every open item, take the first runnable ACT, stop only on a RoundLog-backed `[EXTERNAL-INPUT]`. The self-run replacement for the old continuation Stop hook (no re-fire, no churn). |
 | `do-route` | Route a task to the best-fit agent, team, or general-purpose. *(task-router module)* |
 | `do-team` | Run the engineering agents as a team to build a feature. *(agent-team module)* |
 | `do-remember` | Save a durable fact to the project's file-based memory. *(memory-discipline module)* |
@@ -240,8 +241,8 @@ AFTER A BASH RUN  (PostToolUse)
   commit-doctor.sh   -> heal a failed git commit
 
 TURN END  (Stop)
-  validate-continuation.sh    -> no work handed back; not ending on a question
   codex-stop.sh               -> Codex integrity review + DO:MON frontier drain
+  (turn-completion is self-run: the terminal-check skill + RESPONSE-FORMAT self-check, not a hook)
 ```
 
 ## How `do:mon` works

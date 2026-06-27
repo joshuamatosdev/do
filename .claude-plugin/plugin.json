@@ -138,15 +138,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/validate-continuation.sh\"",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/modules/codex-integrity/hooks/codex-stop.sh\"",
             "timeout": 600
           }

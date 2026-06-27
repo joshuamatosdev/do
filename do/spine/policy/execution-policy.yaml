@@ -523,9 +523,6 @@ enforcement_surface:
       event: PreToolUse
       matcher: 'Edit|Write|MultiEdit'
       enforces: first governed edit per session is blocked until grounded-docs / spec compliance is verified (@docscheck)
-    - hook: validate-continuation.sh
-      event: Stop
-      enforces: no hand-back of actionable work, no passive close, no claimed blocker, no end-on-question (act-and-finish)
     - hook: codex-stop.sh
       event: Stop
       module: codex-integrity

@@ -5,7 +5,7 @@ const { mergeSettings } = require("../lib/merge-settings");
 const PARTIAL = {
   hooks: {
     SessionStart: [{ hooks: [{ type: "command", command: "X/load-do-one.sh", _do: true }] }],
-    Stop: [{ hooks: [{ type: "command", command: "X/validate-continuation.sh", _do: true }] }],
+    Stop: [{ hooks: [{ type: "command", command: "X/validate-capability-preservation.sh", _do: true }] }],
   },
 };
 

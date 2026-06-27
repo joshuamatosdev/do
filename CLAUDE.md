@@ -39,9 +39,11 @@ Know which surface you are touching before you edit — the blast radius is comp
 ### 2. Spine vs. modules
 - `do/spine/` = the always-on core: `CLAUDE.do.md`, `RESPONSE-FORMAT.md`, `ALWAYS-READ.md`,
   `capability-gate.md`, `one.md`, `policy/`, `settings.partial.json`, and `hooks/` — the gate
-  scripts (`validate-continuation.sh`, `block-stub-write.sh`,
+  scripts (`block-stub-write.sh`,
   `docs-compliance-check.sh`, `route-codex-to-skill.sh` — routes Codex consults through the
-  `do:codex` skill) plus the `load-*` session-start loaders.
+  `do:codex` skill) plus the `load-*` session-start loaders. (Turn-completion is no longer a Stop
+  hook — it is the `terminal-check` skill + the RESPONSE-FORMAT self-check; terminal-discipline.md is
+  its spec.)
 - `do/modules/` = 9 **opt-in**, self-contained modules: `completion-gates`, `memory-discipline`,
   `codex-integrity`, `codex-frontier`, `commit-doctor`, `git-gate`, `task-router`, `agent-team`,
   `oppihtnias`. Each ships its own hooks/skills and is enabled at setup or via `/do:run add <module>`.
@@ -56,8 +58,8 @@ ran `/do:run setup` — which is why the same hook can be loaded yet silent.
   `merge-settings`, `paths`, `version`, `which`. It is the logic behind the single command
   `commands/run.md` and the `setup` skill.
 - `hooks/` (top-level) = JS activators/trackers for the two sticky session modes, **compress** and **mon**.
-- `agents/` = 10 dispatchable subagents · `skills/` = 18 in-repo skills (4 more ship with modules,
-  22 total per README) · `workflows/` = 3 deterministic multi-agent scripts (`adr-spec.js`,
+- `agents/` = 10 dispatchable subagents · `skills/` = 19 in-repo skills (4 more ship with modules,
+  23 total per README) · `workflows/` = 3 deterministic multi-agent scripts (`adr-spec.js`,
   `adversarial-review.js`, `red-blue-sweep.js`), run with the Workflow tool by path.
 - `tools/` = standalone helpers: `plain-words.js` + `wordlist` (the compress plain-words check),
   `adr-spec-*` (the ADR skill), `yaml-lite.js`, `frontmatter-schema.js`.
@@ -67,7 +69,7 @@ ran `/do:run setup` — which is why the same hook can be loaded yet silent.
 - **Never hand-edit the `DO:BEGIN … DO:END` block in `AGENTS.md`** — it is generated from the source
   under `do/spine/` by the installer. Change the spine source and re-run `/do:run setup` to
   regenerate; editing the block directly is overwritten on the next setup/refresh.
-- The gates you hit in-session (response-format tier, continuation, codex integrity review) are
+- The gates you hit in-session (response-format tier, codex integrity review) are
   *this plugin's own hooks* acting on you because the repo is dogfooded. A failing Stop gate is
   feedback on your turn — fix the turn, do not suppress the gate.
 - Hook scripts are bash/PowerShell; the install engine (`lib/`) and the mode activators (`hooks/`)
