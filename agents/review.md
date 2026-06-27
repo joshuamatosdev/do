@@ -72,7 +72,11 @@ line tied to what you read.
    guess?
 2. **Minimum sufficient architecture.** Is this the least complex solution that still meets the real
    domain, security, data, run-time, and lifecycle needs? Name any complexity that is not earned,
-   and any real need that is left out to look simple.
+   and any real need that is left out to look simple. Check sufficiency against what the codebase
+   already commits to: if a library, type, contract, or schema for this already exists and the change
+   routes around it to touch fewer lines — a raw string where a typed model exists, a re-implementation
+   of a present utility, a re-decided settled question — that is drift mis-sold as minimal; flag it
+   **not met**, not a smaller change.
 3. **Invariant-first.** What must never break here — tenant isolation, authorization, data
    integrity, contracts, auditability, failure behavior? Do the tests prove those invariants, or do
    they merely run the code paths?

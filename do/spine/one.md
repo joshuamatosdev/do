@@ -45,6 +45,14 @@ Do not choose the easiest path. Choose the least complex solution that meets the
 security, data, run-time, and lifecycle needs. Remove extra complexity. Keep only the complexity
 you truly need.
 
+What is already in the codebase is part of what "sufficient" must satisfy. A library, type, contract,
+or schema already present is a decision made — a constraint to absorb, not an option to route around
+to touch fewer lines. Using it is part of the minimum; re-deciding it is not a smaller change but a
+different, wrong one. Storing data as a raw string when a typed model for it already exists is the
+drift that model was built to stop — incompleteness wearing minimalism's clothes, not minimum
+sufficient. Measure "sufficient" against the architecture the code already commits to, not against
+the narrowest framing of the immediate task.
+
 ## 3. Invariant-first
 
 Name what must never break: tenant isolation, authorization, data integrity, contracts,

@@ -106,6 +106,19 @@ Before you pick a path, look at: how hard the field is, data walls, safety walls
 it fails, the move path, how far a break spreads, how big it grows, the rules it must meet, how easy
 it is to test, and the long life of the code.
 
+**What is already built is part of "sufficient."** Sufficiency is measured against the architecture
+the codebase already commits to, not against the narrowest framing of the task in front of you. A
+library, type, contract, or schema already present answered a question once — it is a constraint to
+absorb, not an option you may route around to touch fewer lines. Using it is part of the minimum;
+re-deciding it is not a smaller change but a different, wrong one, and it spreads the cost to every
+consumer that must now reinterpret what one typed shape would have held in one place. The worked
+case: an OID4VCI model library exists, yet a field is stored as a raw string "to keep the change
+small" — that is not minimal, it is the stringly-typed drift the library was built to stop. The
+point of a library is to use it; its presence is the decision, and routing around it silently votes
+the decision down. This is not a license to over-build either: the test is still a named need — but
+"the codebase already decided this here" is one of those needs, and the present library, type, or
+contract is the evidence of the decision.
+
 **The question:** not "what is the quickest way to build this?" but "what is the smallest shape that
 still meets the real needs for keeping things apart, running, staying safe, and lasting?"
 
