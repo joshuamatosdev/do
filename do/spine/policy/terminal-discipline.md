@@ -1,6 +1,6 @@
 # Terminal-State Discipline — Specification
 
-> Binding on the `terminal-check` self-check and on any agent at a **stop-or-act** decision. Register: legal
+> Binding on the continuation gate, the `terminal-check` self-check, and any agent at a **stop-or-act** decision. Register: legal
 > (obligation), mathematical (predicate), code (contract), under scientific method (falsification).
 > `[USER]` is repealed. This spec was passed against its own §4 and against the skill-craft bars
 > (leading words, exhaustive completion criteria, single source of truth, no-ops cut).

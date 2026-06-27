@@ -213,7 +213,7 @@ blocks_new=$((blocks + 1))
 
 # Hard cap -> failsafe ALLOW (never loop forever).
 if [ "$blocks_new" -gt "$MAX" ]; then
-  printf 'do continuation gate: hard cap (%s) reached -- releasing to avoid a loop. If work truly remains, restate the goal or use /goal.\n' "$MAX" >&2
+  printf 'terminal-discipline: hard cap (%s) reached -- releasing to avoid a loop. If an ACT truly remains, restate the goal or use /goal.\n' "$MAX" >&2
   allow_clean
 fi
 
@@ -232,27 +232,27 @@ frontier_policy="1. Finish the requested objective. 2. Classify discovered work.
 do_mon_brief="DO:MON automated reasoner: run the do:mon skill (ChatGPT). Send the smallest scrubbed prompt that includes relevant code, local evidence, failing output, and the specific decision. Ask it to act as a senior tech-lead and AI creator of transforms: provide code where useful, discuss implementation ideas, definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution. Treat the answer as advisory; verify it against code/tests, choose the best path, then act this turn. The user can interrupt the session if they disagree; do not stop waiting for user interjection."
 
 if [ "$escalate" = "1" ]; then
-  reason="do continuation gate (Never-Stop-Escalate): blocker/no-progress while frontier work remains. $frontier_policy Run \`do:mon\` with the DO:MON brief. PROCEED: continue only on a verified safe path. HOLD only for true EXTERNAL-INPUT -- a credential the agent cannot compute, or a SAFETY_GATE (irreversible AND outward AND consequential): return with \`- [ ] [EXTERNAL-INPUT] <choice>\` carrying a RoundLog (terminal-discipline §4/§5). If do:mon is unavailable, use codex --decide or dispatch do:change-skeptic. $do_mon_brief Frontier work: ${items:-<see your Remaining Steps>}"
+  reason="terminal-discipline §4 escalation: a claimed blocker ∨ stall ≥ K -- H₀ remains unfalsified, ∃ ACT. $frontier_policy CONSULT now: run \`do:mon\` (DO:MON brief), verify the answer vs code + tests, ACT this turn. HOLD ⟺ EXTERNAL-INPUT (a credential the agent cannot compute ∨ a SAFETY_GATE: irreversible ∧ outward ∧ consequential), and only carrying a §5 RoundLog: \`- [ ] [EXTERNAL-INPUT] <choice>\`. do:mon unavailable → \`codex --decide\` ∨ dispatch \`do:change-skeptic\`. $do_mon_brief Frontier work: ${items:-<see your Remaining Steps>}"
 else
-  reason="do continuation gate: frontier work remains. $frontier_policy The only terminal is EXTERNAL-INPUT, earned via the §4 falsification protocol and carried as a RoundLog (\`[USER]\` is repealed) -- never agent-runnable work or a technical design decision. Ground local details in code or test a hypothesis. If this is hard, design-sensitive, outward-facing, or difficult, surface it as \`[DO:MON]\` and run \`do:mon\` with the DO:MON brief. $do_mon_brief Frontier work: ${items:-<see your Remaining Steps>}"
+  reason="terminal-discipline §1: H₀ holds -- ∃ ACT advancing the objective, so the turn is not terminal. $frontier_policy §3 routes -- AGENT / DERIVE / TEST / CONSULT / PARAMETERIZE / DEFAULT -- are machine-runnable: take the first ACT now (DERIVE a local from code with a cite, TEST a hypothesis with a probe). The sole TERMINAL is EXTERNAL-INPUT -- a credential the agent cannot compute, ∨ a SAFETY_GATE (irreversible ∧ outward ∧ consequential) -- admissible ⟺ a §5 RoundLog; \`[USER]\` is repealed. Route a hard / design / outward call to do:mon as \`[DO:MON]\`: consult, verify vs code + tests, continue. $do_mon_brief Frontier work: ${items:-<see your Remaining Steps>}"
 fi
 
-# Act-and-finish policy: whenever a question mark contributed to the block, name the rule on the
-# reason (EVERY path, not only the no-open-work case) so the agent always sees WHY a '?' fired.
+# Per-signal clauses, each tagged with the terminal-discipline section it enforces, appended on EVERY
+# path so the agent always sees WHICH rule fired.
 if [ "$question" = "1" ]; then
-  reason="$reason  --  act-and-finish: a prose question mark means you are asking instead of acting. Act on the answer, ground/test it, or record a real EXTERNAL-INPUT choice as \`- [ ] [EXTERNAL-INPUT] <choice>\` (with a RoundLog) without a question mark."
+  reason="$reason  --  §1 ASK: a prose '?' is an ask, not an ACT. ACT on the answer, GROUND it (cite) ∨ TEST it (probe), or record EXTERNAL-INPUT as \`- [ ] [EXTERNAL-INPUT] <choice>\` (with a §5 RoundLog), no '?'."
 fi
 if [ "$self_gate_user" = "1" ]; then
-  reason="$reason  --  agent-created gate handoff: rollout or flip prerequisites the agent identified are frontier work, not a user decision. Finish them now, or mark the feature incomplete with grounded evidence."
+  reason="$reason  --  §3 PUNT: agent-introduced rollout / flip / readiness prerequisites are frontier work (AGENT / DERIVE / TEST), not a TERMINAL. Drain them now, or mark the feature NOT COMPLETE with grounded evidence."
 fi
 if [ "$technical_user" = "1" ]; then
-  reason="$reason  --  technical design decision: do not surface hard architecture, design, acceptance-criteria, tradeoff, or long-term scalability calls as a terminal. Surface them as [DO:MON], consult do:mon, verify the result, and continue."
+  reason="$reason  --  §3 CONSULT: a hard architecture / design / acceptance / tradeoff / scalability call is not a TERMINAL. Route \`[DO:MON]\`, consult do:mon, verify, continue."
 fi
 if [ "$inadmissible_terminal" = "1" ]; then
-  reason="$reason  --  terminal-discipline: a TERMINAL / EXTERNAL-INPUT claim is INADMISSIBLE without a RoundLog (§5). Run the §4 falsification protocol (>= 5 lenses: internal-reasoner, consult-reasoner, adversarial-review, creative-analysis, driven-directive, machine-intelligence; converged; an independent concurrence) and carry the RoundLog block, or it is not terminal. See .claude/do/terminal-discipline.md."
+  reason="$reason  --  §5 INADMISSIBLE: a TERMINAL / EXTERNAL-INPUT claim without a RoundLog is rejected. Run §4 (≥ 5 lenses: internal-reasoner, consult-reasoner, adversarial-review, creative-analysis, driven-directive, machine-intelligence; converged; an independent concurrence), carry the §5 RoundLog, or it is not terminal. .claude/do/terminal-discipline.md."
 fi
 if [ "$repealed_user" = "1" ]; then
-  reason="$reason  --  [USER] is REPEALED: it is a banned token and never earns terminal status. Resolve the work (AGENT / DERIVE / TEST / CONSULT / PARAMETERIZE / DEFAULT), or assert EXTERNAL-INPUT with a RoundLog (terminal-discipline §2/§3). See .claude/do/terminal-discipline.md."
+  reason="$reason  --  \`[USER]\` is REPEALED -- a banned token; it never earns a TERMINAL. Resolve via §3 (AGENT / DERIVE / TEST / CONSULT / PARAMETERIZE / DEFAULT), or assert EXTERNAL-INPUT with a §5 RoundLog. .claude/do/terminal-discipline.md."
 fi
 
 printf '{"blocks":%s,"stall":%s,"lastToolCount":%s}\n' "$blocks_new" "$stall_new" "$toolcount" > "$state_file" 2>/dev/null || true

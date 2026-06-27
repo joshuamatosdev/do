@@ -39,11 +39,11 @@ Know which surface you are touching before you edit — the blast radius is comp
 ### 2. Spine vs. modules
 - `do/spine/` = the always-on core: `CLAUDE.do.md`, `RESPONSE-FORMAT.md`, `ALWAYS-READ.md`,
   `capability-gate.md`, `one.md`, `policy/`, `settings.partial.json`, and `hooks/` — the gate
-  scripts (`block-stub-write.sh`,
+  scripts (`validate-continuation.sh`, `block-stub-write.sh`,
   `docs-compliance-check.sh`, `route-codex-to-skill.sh` — routes Codex consults through the
-  `do:codex` skill) plus the `load-*` session-start loaders. (Turn-completion is no longer a Stop
-  hook — it is the `terminal-check` skill + the RESPONSE-FORMAT self-check; terminal-discipline.md is
-  its spec.)
+  `do:codex` skill) plus the `load-*` session-start loaders. (Turn-completion is enforced TWO ways
+  off one spec, `terminal-discipline.md`: the self-run `terminal-check` skill + RESPONSE-FORMAT
+  self-check as the primary, and the `validate-continuation.sh` Stop hook as the deterministic backstop.)
 - `do/modules/` = 9 **opt-in**, self-contained modules: `completion-gates`, `memory-discipline`,
   `codex-integrity`, `codex-frontier`, `commit-doctor`, `git-gate`, `task-router`, `agent-team`,
   `oppihtnias`. Each ships its own hooks/skills and is enabled at setup or via `/do:run add <module>`.
@@ -69,7 +69,7 @@ ran `/do:run setup` — which is why the same hook can be loaded yet silent.
 - **Never hand-edit the `DO:BEGIN … DO:END` block in `AGENTS.md`** — it is generated from the source
   under `do/spine/` by the installer. Change the spine source and re-run `/do:run setup` to
   regenerate; editing the block directly is overwritten on the next setup/refresh.
-- The gates you hit in-session (response-format tier, codex integrity review) are
+- The gates you hit in-session (response-format tier, continuation, codex integrity review) are
   *this plugin's own hooks* acting on you because the repo is dogfooded. A failing Stop gate is
   feedback on your turn — fix the turn, do not suppress the gate.
 - Hook scripts are bash/PowerShell; the install engine (`lib/`) and the mode activators (`hooks/`)

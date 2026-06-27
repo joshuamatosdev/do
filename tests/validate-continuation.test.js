@@ -10,7 +10,7 @@ const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 // ending while its own response still lists actionable work, uses a legacy escape tag,
 // or hands back passively ("awaiting your direction"). [EXTERNAL-INPUT] = the sole terminal (a credential, or a SAFETY_GATE); [USER] is repealed.
 // Discovered work is a frontier to drain, not a future queue. A claimed blocker or repeated
-// no-progress escalates with a "Never-Stop-Escalate" reason naming `do:mon`. A RoundLog-backed
+// no-progress escalates with a §4 escalation reason naming `do:mon`. A RoundLog-backed
 // authority decision (terminal-discipline §5/§6 -- bare [USER] is repealed), a clean turn, or the
 // hard iteration cap ALLOWS. Faithful test -- runs the bash hook;
 // skipped where bash/jq is unavailable.
@@ -102,7 +102,7 @@ test("open '- [ ]' with no progress -> BLOCK (layer 1, not escalate)", { skip: S
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "actionable open work must block");
   assertFrontierLanguage(out);
-  assert.ok(!out.includes("Never-Stop-Escalate"), "first nudge is layer-1, not escalation");
+  assert.ok(!out.includes("escalation"), "first nudge is layer-1, not escalation");
 });
 
 test("'awaiting your direction' + open work -> BLOCK", { skip: SKIP }, () => {
@@ -123,7 +123,7 @@ test("ends by asking the user (?) -> BLOCK (act-and-finish policy)", { skip: SKI
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "any question mark in the turn must fire the gate");
-  assert.ok(out.includes("act-and-finish"), "reason must name the act-and-finish policy");
+  assert.ok(out.includes("§1 ASK"), "reason must name the §1 ASK rule");
 });
 
 test("question mark fires even an otherwise-clean ([x]) turn", { skip: SKIP }, () => {
@@ -173,7 +173,7 @@ test("genuine prose question still BLOCKs even when code spans are present", { s
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "a real prose '?' must still fire even alongside a code span");
-  assert.ok(out.includes("act-and-finish"), "reason must name the act-and-finish policy");
+  assert.ok(out.includes("§1 ASK"), "reason must name the §1 ASK rule");
 });
 
 test("authority decision phrased WITHOUT a '?', WITH a RoundLog -> ALLOW (regression)", { skip: SKIP }, () => {
@@ -229,7 +229,7 @@ test("[EXTERNAL-INPUT] technical design decision -> BLOCK and reroute to DO:MON"
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "technical design decisions must not be parked on the user");
   assert.match(out, /DO:MON/);
-  assert.match(out, /technical design decision/i);
+  assert.ok(out.includes("§3 CONSULT"), "reason routes a hard call to DO:MON as a §3 CONSULT");
 });
 
 test("legacy escape-tagged open item -> BLOCK", { skip: SKIP }, () => {
@@ -265,7 +265,7 @@ test("claimed blocker -> BLOCK with escalate reason naming do:mon", { skip: SKIP
   const out = run(d, tf);
   assert.equal(isBlock(out), true);
   assert.ok(out.includes("do:mon"), "blocker must route to do:mon");
-  assert.ok(out.includes("Never-Stop-Escalate"), "blocker is a layer-2 escalation");
+  assert.ok(out.includes("escalation"), "blocker is a layer-2 escalation");
 });
 
 test("stuck (stall seeded) -> escalate even without a blocker phrase", { skip: SKIP }, () => {
@@ -327,7 +327,7 @@ test("progress made (tool calls) -> still BLOCK but resets stall (layer 1)", { s
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true);
-  assert.ok(!out.includes("Never-Stop-Escalate"), "progress resets stall -> stays layer-1, no escalation");
+  assert.ok(!out.includes("escalation"), "progress resets stall -> stays layer-1, no escalation");
 });
 
 test("[EXTERNAL-INPUT] on a doable ACTION (restart) -> BLOCK (no handing your own work back)", { skip: SKIP }, () => {
@@ -338,7 +338,7 @@ test("[EXTERNAL-INPUT] on a doable ACTION (restart) -> BLOCK (no handing your ow
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "an [EXTERNAL-INPUT] item that is really a doable action must not end the turn");
-  assert.ok(!out.includes("Never-Stop-Escalate"), "first nudge is layer-1, not escalation");
+  assert.ok(!out.includes("escalation"), "first nudge is layer-1, not escalation");
 });
 
 test("[EXTERNAL-INPUT] on a doable ACTION (commit) -> BLOCK", { skip: SKIP }, () => {
@@ -379,7 +379,7 @@ test("[EXTERNAL-INPUT] flip-gate build-vs-defer handoff -> BLOCK (agent-created 
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "agent-runnable rollout prerequisites must not be hidden as a user choice");
-  assert.ok(out.includes("agent-created gate"), "reason should name the invented-gate handoff");
+  assert.ok(out.includes("§3 PUNT"), "reason should name the invented gate as a §3 PUNT");
 });
 
 // --- terminal-discipline §5/§6: a terminal is admissible ONLY with a RoundLog. -----------------

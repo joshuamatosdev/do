@@ -523,6 +523,9 @@ enforcement_surface:
       event: PreToolUse
       matcher: 'Edit|Write|MultiEdit'
       enforces: first governed edit per session is blocked until grounded-docs / spec compliance is verified (@docscheck)
+    - hook: validate-continuation.sh
+      event: Stop
+      enforces: terminal-discipline -- no hand-back while an ACT exists; sole TERMINAL is EXTERNAL-INPUT with a §5 RoundLog ([USER] repealed). Deterministic backstop to the self-run terminal-check skill.
     - hook: codex-stop.sh
       event: Stop
       module: codex-integrity

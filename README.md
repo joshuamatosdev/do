@@ -241,8 +241,9 @@ AFTER A BASH RUN  (PostToolUse)
   commit-doctor.sh   -> heal a failed git commit
 
 TURN END  (Stop)
+  validate-continuation.sh    -> deterministic backstop: no hand-back while an ACT exists; terminal only with a RoundLog
   codex-stop.sh               -> Codex integrity review + DO:MON frontier drain
-  (turn-completion is self-run: the terminal-check skill + RESPONSE-FORMAT self-check, not a hook)
+  (the self-run terminal-check skill + RESPONSE-FORMAT self-check are the primary; the hook is the floor)
 ```
 
 ## How `do:mon` works
