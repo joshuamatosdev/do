@@ -1,7 +1,7 @@
 {
   "name": "do",
   "description": "/do:run setup installs a portable engineering workflow (tiered response format, phase ladder, model discipline, safety + integrity gates) into any project.",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "license": "Apache-2.0",
   "author": {
     "name": "Joshua Matos",

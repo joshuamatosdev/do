@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.26] — 2026-06-26
+
+### Added
+
+- **`route-codex-to-skill` gate** — a self-gated `PreToolUse(Bash|PowerShell)` hook routes Codex
+  consults through the `do:codex` skill: a direct `codex exec` / `codex.sh` run that lacks the
+  skill's marker is blocked and redirected to the skill (which applies secret-scrubbing, transcript
+  forwarding, the pinned model, and verbatim return). The skill's own run carries
+  `DO_CODEX_VIA_SKILL=1`; kill switch `DO_CODEX_ROUTE_OFF=1`. Allows non-codex commands, codex-file
+  inspection, the test suite, and non-consult codex subcommands.
+
+### Changed
+
+- **Codex consult output is metadata-free** — `codex.sh` captures Codex's final answer via
+  `--output-last-message` and emits only that (no prompt echo / grounding tool-calls / progress);
+  the full stream is still saved to the audit log, with a fail-safe fallback when the answer file is
+  empty. The same extraction is applied to the `codex-integrity` review path so the Stop block
+  reason carries the clean verdict.
+
 ## [0.1.25] — 2026-06-26
 
 ### Changed
@@ -106,7 +125,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...HEAD
+[0.1.26]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...do--v0.1.26
 [0.1.25]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...do--v0.1.25
 [0.1.24]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...do--v0.1.24
 [0.1.23]: https://github.com/joshuamatosdev/do/compare/do--v0.1.22...do--v0.1.23
