@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.29] — 2026-06-27
+
+### Added
+
+- **Agents** — `hexagonal-refactor` (plan a behavior-preserving Spring Boot hexagonal
+  refactor toward standard Spring; apply only when instructed) and `spring-boot-test-strategist`
+  (comprehensive Spring Boot test strategy across every layer, field, and security path with
+  standard libraries), plus the dispatched adversarial family `plan-skeptic` / `change-skeptic` /
+  `commit-skeptic` and `absolute-adversary` (prosecute a whole body of work — plan + diff + claims
+  + commit — at once). The agent set is now 16.
+- **`absolute-adversary` skill** — the in-session form of the maximal, all-lens adversary.
+- **`suggest-do-agents` hook** — an always-on `UserPromptSubmit` spine hook that enumerates the
+  do: agents (name + one-line purpose, scanned live from `agents/*.md`) and suggests a best-fit
+  specialist. Self-gates on `.claude/do.manifest.json` and stays silent when the prompt already
+  names an agent or a route.
+
 ## [0.1.28] — 2026-06-27
 
 ### Added
@@ -162,7 +178,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...HEAD
+[0.1.29]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...do--v0.1.29
 [0.1.28]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...do--v0.1.28
 [0.1.27]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...do--v0.1.27
 [0.1.26]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...do--v0.1.26
