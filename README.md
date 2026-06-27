@@ -15,7 +15,7 @@
 
 - Installs a **tiered response format** so answers match the weight of the turn.
 - Installs the **five moves** of the system and keeps them in context every session.
-- Ships **10 agents** and **23 skills** you dispatch on demand (full list below).
+- Ships **16 agents** and **24 skills** you dispatch on demand (full list below).
 - Wires **safety + integrity gates** as hooks: block harmful git, block stub/TODO writes,
   check the response, run an adversarial end-of-turn review.
 - Adds **opt-in modules** for memory, agent teams, completion gates, and more.
@@ -132,6 +132,12 @@ Dispatch as `do:<name>`.
 | `do:docs` | Write or update docs grounded in the code; flags doc-vs-code drift instead of hiding it. |
 | `do:commit` | Survey the tree, group changes into clean commits, push, and heal a failed commit itself. |
 | `do:security-recon` | Authorized, **local-only** security recon: scope, safe PoC, scoring, reports. Refuses public targets. |
+| `do:hexagonal-refactor` | Examine a Spring Boot hexagonal app and plan a behavior-preserving refactor toward standard Spring; applies changes only when instructed. |
+| `do:spring-boot-test-strategist` | Build a comprehensive Spring Boot test strategy across every layer, field, and security path using standard test libraries. |
+| `do:plan-skeptic` | Press a plan in its own context; the dispatched form of the `plan-skeptic` skill. Returns Approve / Challenge. |
+| `do:change-skeptic` | Interrogate a turn for integrity in its own context; the dispatched form of `change-skeptic`. Returns ALLOW / BLOCK / REPAIR. |
+| `do:commit-skeptic` | Vet a staged commit in its own context; the dispatched form of `commit-skeptic`. Returns Clear / Hold. |
+| `do:absolute-adversary` | The maximal adversary — prosecute a whole body of work (plan + diff + claims + commit) at once. Returns REJECT / REPAIR / WITHSTOOD. |
 
 ## Skills
 
@@ -148,6 +154,7 @@ Loaded on demand. Invoke by name or `/do:<name>`.
 | `plan-skeptic` | Adversarially review a plan before any code; returns Approve or Challenge. |
 | `commit-skeptic` | Adversarially review a staged commit before it lands; returns Clear or Hold. |
 | `change-skeptic` | Adversarial turn-level integrity review; the in-session fallback when `codex` is absent. |
+| `absolute-adversary` | The maximal, all-lens adversary: prosecute a whole body of work at once; assume compromise, build the strongest true counter-case, re-run every "it works". Returns REJECT / REPAIR / WITHSTOOD. |
 | `codebase-cartography` | Map a repo to architecture diagrams (ASCII + Mermaid) and a structured report. Read-only. |
 | `grounded-docs` | Stand up a citation-ready documentation index so agents answer from pinned sources. |
 | `report-writing` | Fill a JSON payload, then render a single self-contained HTML engineering report. |

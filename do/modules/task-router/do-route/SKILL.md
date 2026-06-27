@@ -50,6 +50,7 @@ Whole bounded-context module tests | `do:test-engineer-module`
 Docs / change write-up | `do:docs`
 Commit & push end-to-end | `do:commit`
 Interrogate a change / commit for integrity | `do:change-skeptic` / `do:commit-skeptic`
+Maximally break a WHOLE body of work (plan + diff + claims + commit) | `do:absolute-adversary`
 Plan a multi-step spec | `superpowers:writing-plans` (then press with `do:plan-skeptic`)
 Brainstorm from only a goal | `superpowers:brainstorming`
 Nothing above fits | `general-purpose`
