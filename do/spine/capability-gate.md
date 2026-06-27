@@ -38,3 +38,16 @@ compute the real value; or, if that is genuinely out of reach, keep the honest a
 delivery `CAPABILITY STATUS: NOT COMPLETE` with a grounded gap record. Never present a degraded
 sentinel as a finished fix. The `validate-capability-preservation.sh` Stop hook warns on this
 (advisory).
+
+## A masking fallback is a sentinel in structural form (DO-CAP-002)
+
+A fallback that yields a SENTINEL — `Optional.empty()`, a null-object, a no-op adapter, a default
+stub — *in place of* a real implementation is DO-CAP-001 wearing a **bean's or adapter's** clothes. It
+is a **FABRICATION** (terminal-discipline §1 mirror) **unless both** hold: (a) it is gated behind an
+EXPLICIT, committed mode (a profile/property the repo actually sets — never `matchIfMissing` or a
+global default), **and** (b) a test proves it is **INERT in the full path** (the real bean is required;
+the fallback does not load). An ungated, global fallback is worse than the failure it hides: it
+degrades the whole system's fail-fast, so a genuinely missing or broken dependency now resolves
+silently to empty instead of failing startup. **A green run resting on such a fallback is not proof the
+system works — it is proof the alarm was disconnected.** Mark the delivery
+`CAPABILITY STATUS: NOT COMPLETE` until (a) and (b) hold.

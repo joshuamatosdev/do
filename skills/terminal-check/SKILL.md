@@ -62,6 +62,19 @@ no external gate now — the discipline is yours to run, every turn, before you 
   and your report cite the actual open items, code `file:line`, command output, and spec lines —
   quotes, not recall.
 
+## Tells to catch (the false-done family)
+
+The §4 lenses, sharpened on the most common false terminals:
+
+- **MASKING-FALLBACK.** A new path returning `empty` / null-object / no-op in place of a real
+  implementation is a FABRICATION (capability-gate DO-CAP-002) unless it is gated behind an explicit
+  committed mode AND a test proves it is inert in the full path. A green run resting on one is not proof
+  the system works — it is proof the alarm was disconnected.
+- **False-done-on-failing-gate.** Declaring a milestone done while a hard runtime gate is red is a
+  false TERMINAL unless that gate is genuinely [EXTERNAL-INPUT] — which a fixable design gate is not.
+- **Rhetorical wall.** A stop justified by "I won't weaken X" must name the ACT that honors X's intent
+  without weakening it, or it is a punt. The refusal can be true and still not be the frontier.
+
 ## Done when
 
 You have either taken an ACT (and will re-run this check), or you are stopping on a single

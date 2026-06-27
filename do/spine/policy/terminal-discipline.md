@@ -22,7 +22,9 @@ falsification*. Stated as the experiment:
   output of §4. H₁ asserted without §4 is **INADMISSIBLE** and MUST be rejected.
 - **Mirror.** H₀′ (act-side) = `the asserted ACT is GROUNDED.` An ungrounded act is a **FABRICATION**
   and is rejected identically to an inadmissible TERMINAL. The weight falsifies in both directions; a
-  stop-to-dodge-work and an act-to-dodge-a-stop are one offence.
+  stop-to-dodge-work and an act-to-dodge-a-stop are one offence. A **MASKING-FALLBACK** — an `empty` /
+  null-object / no-op stub returned in place of a real implementation — is the structural form of the
+  fabrication (capability-gate **DO-CAP-002**).
 
 The dynamic check on every candidate: **Is this truly a gate or a punt** — and its twin, truly an act
 or a fabrication.
@@ -41,6 +43,9 @@ or a fabrication.
 - **SAFETY_GATE(x)** ⟺ `IRREVERSIBLE(x) ∧ OUTWARD(x) ∧ CONSEQUENTIAL(x)`.
 - **EXTERNAL-INPUT** — a datum the agent cannot compute (a secret/credential), or any `x` where
   `SAFETY_GATE(x)`. The **sole** TERMINAL.
+- **Failing runtime gate** (startup / drift / CI) is **NOT** EXTERNAL-INPUT when satisfying it is an
+  agent-runnable design change. "I will not bypass the gate" is a true constraint, not a terminal — §4
+  must still find the ACT that honors the gate's intent.
 
 ## §3 — Classification (typed states; first match binds)
 
@@ -94,6 +99,11 @@ TERMINAL_ADMISSIBLE  ⟺  (∀ L : ran(L) ∧ ¬found_action(L))     // every le
 **Elimination of all other plausible weights that can be acted upon** is the conjunction `∀ L`
 above — not a sentiment.
 
+**Wall test.** A TERMINAL justified by a refusal ("I will not weaken X") is INADMISSIBLE until a lens
+has searched for — and failed to find — an ACT that honors X's intent without weakening it. A milestone
+declared *done* while a hard gate is red is a false TERMINAL unless that gate is genuinely
+EXTERNAL-INPUT (§2). Cite the ACT you searched for, or the refusal is a punt wearing a principle's clothes.
+
 ## §5 — The contract (the gate parses this struct; it MUST NOT keyword-scan prose)
 
 A TERMINAL or SAFETY_GATE claim is admissible **iff** it carries:
@@ -126,6 +136,13 @@ HIGH_STAKES = { validate-discipline, define-gate, claim-compliance, assert-TERMI
 admissible(k) ⟺ ( k ∈ HIGH_STAKES ⇒ ∃ RED(k) )      // RED(k): a failing test ∨ a negative case the claim rejects
 k = ordinary reversible ACT ⇒ RED(k) not required
 ```
+
+**Worked RED — the canonical false-done.** "Milestone done" is claimed while a startup gate is red; the
+green boot rests on a global, `empty`-returning fallback; no test proves the fallback is inert in the
+full path; no end-to-end run proves the objective. The claim carries no RED, so it cannot fail —
+unfalsifiable → INADMISSIBLE. The fallback (a FABRICATION / **DO-CAP-002**) and the "done" (a false
+TERMINAL) are **one offence** (§1). The REDs that make it honest: a full-path test asserting the
+fallback does not load, and an end-to-end proof of the objective.
 
 ## §7 — The carve-out: inverted burden (asymmetric cost ⇒ asymmetric proof)
 
