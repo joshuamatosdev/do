@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.27] — 2026-06-26
+
+### Changed
+
+- Maintenance release: version bump only; no functional changes since 0.1.26.
+
 ## [0.1.26] — 2026-06-26
 
 ### Added
@@ -125,7 +131,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...HEAD
+[0.1.27]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...do--v0.1.27
 [0.1.26]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...do--v0.1.26
 [0.1.25]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...do--v0.1.25
 [0.1.24]: https://github.com/joshuamatosdev/do/compare/do--v0.1.23...do--v0.1.24
