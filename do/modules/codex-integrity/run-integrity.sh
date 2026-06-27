@@ -100,6 +100,23 @@ if [ -s "$raw_in" ] && [ ! -s "$scrubbed" ]; then
 fi
 in="$scrubbed"
 
+# Capture codex's FINAL MESSAGE separately (clean: no prompt echo / grounding tool-calls /
+# progress) via `-o <msgfile>`, so the verdict relayed into the Stop block reason is the
+# synthesized answer, not the merged stdout+stderr stream. Only on the default argv path:
+# the INTEGRITY_CODEX_CMD override is an opaque shell string we do not rewrite (it keeps the
+# merged-output behavior, which the test stubs rely on). Insert `-o` before a trailing "-"
+# (stdin marker) to match the proven flag ordering in skills/codex/codex.sh.
+msgfile=""
+if [ -z "${INTEGRITY_CODEX_CMD:-}" ]; then
+  msgfile=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/do-integrity-msg-$$.txt")
+  argv_n=${#codex_argv[@]}
+  if [ "$argv_n" -gt 0 ] && [ "${codex_argv[$((argv_n-1))]}" = "-" ]; then
+    codex_argv=("${codex_argv[@]:0:$((argv_n-1))}" -o "$msgfile" -)
+  else
+    codex_argv+=(-o "$msgfile")
+  fi
+fi
+
 # 3. Run codex with a hard WALL-CLOCK on the SCRUBBED packet (stdin = $in); capture output+status.
 #    Portable bounding: prefer GNU `timeout`, but when it is ABSENT (minimal Windows/git-bash hosts)
 #    fall back to a manual background + poll + process-tree reap so codex is bounded EITHER WAY --
@@ -149,13 +166,20 @@ run_codex() {  # $1 = input file fed to codex on stdin. Echoes codex output; ret
 out=$(run_codex "$in"); status=$?
 rm -f "$scrubbed" 2>/dev/null || true
 
-# 4. classify failure modes -> fallback.
+# Prefer codex's clean final-message file (from -o) for the relayed verdict; fall back to the
+# merged stream when -o captured nothing (override path / older codex / failure). $out keeps
+# the merged stream for the status/error classification below.
+verdict="$out"
+[ -n "$msgfile" ] && [ -s "$msgfile" ] && verdict=$(cat "$msgfile")
+[ -n "$msgfile" ] && rm -f "$msgfile" 2>/dev/null || true
+
+# 4. classify failure modes -> fallback. (status/exit code from the merged run.)
 [ "$status" -eq 124 ] && emit_fallback "timed out after ${timeout_s}s"
 [ "$status" -ne 0 ]   && emit_fallback "exited non-zero ($status)"
-printf '%s\n' "$out" | grep -qE '^DECISION: (ALLOW|BLOCK|REPAIR|PROCEED|HOLD)' \
+printf '%s\n' "$verdict" | grep -qE '^DECISION: (ALLOW|BLOCK|REPAIR|PROCEED|HOLD)' \
   || emit_fallback "returned no DECISION line"
 
-# 5. success -> relay codex's verdict verbatim.
+# 5. success -> relay codex's verdict verbatim (clean final message).
 echo "SOURCE: codex"
-printf '%s\n' "$out"
+printf '%s\n' "$verdict"
 exit 0

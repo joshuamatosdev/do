@@ -38,15 +38,21 @@ Claude does **not** hand-write the Codex prompt. Hand-synthesis WAS the bug: Cla
 
 Script (bundled in this plugin): `${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh`
 
+> **Always invoke via this skill** — and run the script with the `DO_CODEX_VIA_SKILL=1` prefix
+> shown below. A routing gate (`route-codex-to-skill`) blocks a *direct* `codex` / `codex.sh` run
+> that lacks this marker and redirects to this skill, so the scrub + transcript-forward +
+> verbatim-return discipline always applies. The marker is this skill's authorization to run the
+> script; do not bolt it onto a hand-built codex command to skip the skill.
+
 ```bash
 # consult, explicit question
-"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" "<the user's question, copied verbatim>"
+DO_CODEX_VIA_SKILL=1 "${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" "<the user's question, copied verbatim>"
 
 # consult, no explicit question -> Codex infers the open question from the transcript
-"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh"
+DO_CODEX_VIA_SKILL=1 "${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh"
 
 # decision mode -> Codex gives its own go/no-go on the merits (free-form, no imposed format)
-"${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" --decide "<the pending go/no-go matter, verbatim>"
+DO_CODEX_VIA_SKILL=1 "${CLAUDE_PLUGIN_ROOT}/skills/codex/codex.sh" --decide "<the pending go/no-go matter, verbatim>"
 ```
 
 What the script does for you (so you don't re-do or second-guess it):
@@ -59,7 +65,7 @@ What the script does for you (so you don't re-do or second-guess it):
 
 - Sends Codex ONLY the context followed by the CLOSER line — the verbatim question (if any), the most-recent user message, and the raw transcript, then the closer. By DEFAULT the closer is the empowered "Distinguished Engineer" text and Codex runs with workspace-write; `ASK_CODEX_ALLOW_EDITS=0` restores the read-only `Please advise.` closer. No preamble, no headers, no "independent reasoner" priming, no output format. The transcript is neutral by construction; Codex forms its own view from it.
 
-- Fires `codex.cmd exec --dangerously-bypass-approvals-and-sandbox -s read-only -C <workspace> -` under a default 300s timeout (`ASK_CODEX_TIMEOUT=<positive integer seconds>` overrides; non-numeric/duration like `5m` rejected → 300), with reconnect fail-fast and a winpid process-tree reap so a timeout never orphans the native `codex.exe`; tees the response to `.claude/state/codex-asks/ask-<session-name>-<session-id>-<ts>.log`.
+- Fires `codex.cmd exec --dangerously-bypass-approvals-and-sandbox -s read-only -C <workspace> -o <answerfile> -` under a default 300s timeout (`ASK_CODEX_TIMEOUT=<positive integer seconds>` overrides; non-numeric/duration like `5m` rejected → 300), with reconnect fail-fast and a winpid process-tree reap so a timeout never orphans the native `codex.exe`. `codex exec` already streams prompt echo + grounding tool-calls + progress to stderr and prints only the final answer to stdout; `-o <answerfile>` captures that final answer in a file. The script emits ONLY that answer to stdout and tees the FULL stream (answer + all metadata) to `.claude/state/codex-asks/ask-<session-name>-<session-id>-<ts>.log` for audit. On timeout/abort/older codex the answer file is empty → it falls back to emitting the full log so output is never lost.
 
 > **Edit caveat (be honest):** `--dangerously-bypass-approvals-and-sandbox` gives Codex *full* filesystem access on this Windows host (genuine sandboxing is broken here). By DEFAULT Codex is told to EVALUATE and EDIT, so it can and will write to the `-C` workspace. `ASK_CODEX_ALLOW_EDITS=0` switches the closer to read-only advise — but that is by **convention** (the closer prose), not sandbox enforcement.
 
@@ -73,9 +79,9 @@ Env: `ASK_CODEX_WORKSPACE` overrides `-C`; `ASK_CODEX_TIMEOUT` (seconds) overrid
 
 ## Execution steps
 
-1. **Run the script** — `--decide` for go/no-go, otherwise consult; with the user's verbatim question, or none if they said only `codex`.
+1. **Run the script with the `DO_CODEX_VIA_SKILL=1` prefix** (see the routing-gate note above) — `--decide` for go/no-go, otherwise consult; with the user's verbatim question, or none if they said only `codex`.
 
-2. **Return Codex's response verbatim.** Do NOT paraphrase, summarize, or bolt on a Claude opinion. The script appends `Saved: <path>`.
+2. **Return Codex's response verbatim.** Do NOT paraphrase, summarize, or bolt on a Claude opinion. stdout is now Codex's synthesized final answer ONLY (the metadata/echo/tool-call noise is stripped — the full stream is in the saved `.log`). "Verbatim" still binds: it is the real answer, not minimized. The script appends `Saved: <path>` (the full-stream audit log).
 
 ## Caveman / terse mode
 

@@ -87,6 +87,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/modules/git-gate/hooks/git-gate.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/do/spine/hooks/route-codex-to-skill.sh\""
           }
         ]
       },

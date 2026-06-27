@@ -216,7 +216,11 @@ fi
 # firing line below carries the sandbox intent (ASK_CODEX_ALLOW_EDITS=0 restores
 # read-only + "Please advise."). Secrets were already scrubbed above.
 PROMPT_FILE=$(mktemp)
-trap 'rm -f "$PROMPT_FILE"' EXIT
+# Codex writes ONLY its final synthesized message here via `-o`; this is what we emit to
+# stdout (clean answer). The full stream (prompt echo + grounding tool-calls + progress)
+# still goes to $OUT for audit.
+ANSWER_FILE=$(mktemp)
+trap 'rm -f "$PROMPT_FILE" "$ANSWER_FILE"' EXIT
 {
   [ -n "$QUESTION" ]   && printf '%s\n\n' "$QUESTION"
   [ -n "$LAST_USER" ]  && printf '%s\n\n' "$LAST_USER"
@@ -272,6 +276,7 @@ fi
   -c "model_reasoning_effort=\"$CODEX_REASONING\"" \
   -c "service_tier=\"$CODEX_SERVICE_TIER\"" \
   -C "$WORKSPACE" \
+  -o "$ANSWER_FILE" \
   - < "$PROMPT_FILE" > "$OUT" 2>&1 &
 codex_pid=$!
 codex_winpid=$(cat "/proc/$codex_pid/winpid" 2>/dev/null)
@@ -308,8 +313,15 @@ if [ "$codex_rc" -eq 0 ]; then
   codex_rc=$?
 fi
 
-# Emit Codex's verbatim response (buffered to $OUT during the run) to stdout.
-cat "$OUT"
+# Emit Codex's synthesized final answer ONLY — codex `-o` wrote it to $ANSWER_FILE, with
+# no prompt echo / grounding tool-calls / progress noise. The full stream stays in $OUT
+# for audit. Fall back to the full log if -o produced nothing (timeout/abort/older codex)
+# so output is NEVER lost.
+if [ -s "$ANSWER_FILE" ]; then
+  cat "$ANSWER_FILE"
+else
+  cat "$OUT"
+fi
 
 if [ "$codex_rc" -eq 75 ]; then
   echo "codex: network unstable (>=3 reconnects) — aborted early to avoid a full-timeout stall. Partial output: $OUT" >&2

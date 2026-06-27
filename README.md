@@ -230,6 +230,7 @@ EACH USER PROMPT
 
 BEFORE A TOOL RUNS  (PreToolUse)
   Bash | PowerShell  -> git-gate.sh           (opt-in git-gate module: block harmful git)
+                        route-codex-to-skill.sh (route Codex consults through the do:codex skill)
   Edit | Write       -> protect-user-work.sh   (reserved no-op)
                         block-stub-write.sh    (no stubs / TODOs)
                         docs-compliance-check.sh (spec & reference compliance)

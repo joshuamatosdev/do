@@ -44,6 +44,8 @@ const DESTRUCTIVE = JSON.stringify({ tool_input: { command: "git re" + "set --ha
 const SAFE_GIT = JSON.stringify({ tool_input: { command: "git status" } });
 const STUB = JSON.stringify({ tool_input: { new_string: "x // TO" + "DO: implement" } });
 const CLEAN = JSON.stringify({ tool_input: { new_string: "const x = 1;" } });
+const CODEX_DIRECT = JSON.stringify({ tool_input: { command: "codex exec -" } });
+const CODEX_VIA_SKILL = JSON.stringify({ tool_input: { command: 'DO_CODEX_VIA_SKILL=1 bash skills/codex/codex.sh "q"' } });
 
 test("git-gate self-gates: a non-opted-in project (no manifest) allows destructive git (exit 0)", { skip: SKIP }, () => {
   assert.equal(gitGate(DESTRUCTIVE, bareProject()).code, 0);
@@ -68,6 +70,18 @@ test("block-stub-write enforces in an opted-in project: a stub write is blocked 
 });
 test("block-stub-write allows clean content in an opted-in project (exit 0)", { skip: SKIP }, () => {
   assert.equal(spine("block-stub-write.sh", CLEAN, installedProject()).code, 0);
+});
+
+test("route-codex-to-skill self-gates: a non-opted-in project allows a direct codex run (exit 0)", { skip: SKIP }, () => {
+  assert.equal(spine("route-codex-to-skill.sh", CODEX_DIRECT, bareProject()).code, 0);
+});
+test("route-codex-to-skill enforces in an opted-in project: a direct codex run is blocked (exit 2)", { skip: SKIP }, () => {
+  const r = spine("route-codex-to-skill.sh", CODEX_DIRECT, installedProject());
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /Consult Codex through the do:codex SKILL/);
+});
+test("route-codex-to-skill allows the skill's own marked run in an opted-in project (exit 0)", { skip: SKIP }, () => {
+  assert.equal(spine("route-codex-to-skill.sh", CODEX_VIA_SKILL, installedProject()).code, 0);
 });
 
 test("codex-integrity review is silent in a non-opted-in project (no manifest)", { skip: SKIP }, () => {

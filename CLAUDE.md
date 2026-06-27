@@ -40,7 +40,8 @@ Know which surface you are touching before you edit — the blast radius is comp
 - `do/spine/` = the always-on core: `CLAUDE.do.md`, `RESPONSE-FORMAT.md`, `ALWAYS-READ.md`,
   `capability-gate.md`, `one.md`, `policy/`, `settings.partial.json`, and `hooks/` — the gate
   scripts (`validate-continuation.sh`, `block-stub-write.sh`,
-  `docs-compliance-check.sh`) plus the `load-*` session-start loaders.
+  `docs-compliance-check.sh`, `route-codex-to-skill.sh` — routes Codex consults through the
+  `do:codex` skill) plus the `load-*` session-start loaders.
 - `do/modules/` = 9 **opt-in**, self-contained modules: `completion-gates`, `memory-discipline`,
   `codex-integrity`, `codex-frontier`, `commit-doctor`, `git-gate`, `task-router`, `agent-team`,
   `oppihtnias`. Each ships its own hooks/skills and is enabled at setup or via `/do:run add <module>`.
