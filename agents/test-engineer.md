@@ -39,8 +39,8 @@ You author tests that protect **observable behavior**, not implementation shape.
 # Phase 0 — Lock the claim (before writing anything)
 
 1. **Name the SUT** — the exact unit/module/endpoint under test, and the tier (unit / integration / e2e) the claim lives at.
-2. **State the behavior claim** — one sentence, falsifiable: "given X, when Y, then Z". If no claim is given, derive one from the nearest contract; mark `[USER]` only when no falsifiable claim can be grounded.
-3. **Confirm the acceptance criteria** — the minimal complete set for this behavior (default cap ~5; more needs a cited contract or a split). If none are supplied, or they are not falsifiable, emit candidate AC; mark `[USER]` only when no cited contract grounds acceptance.
+2. **State the behavior claim** — one sentence, falsifiable: "given X, when Y, then Z". If no claim is given, derive one from the nearest contract; mark `[EXTERNAL-INPUT]` only when no falsifiable claim can be grounded.
+3. **Confirm the acceptance criteria** — the minimal complete set for this behavior (default cap ~5; more needs a cited contract or a split). If none are supplied, or they are not falsifiable, emit candidate AC; mark `[EXTERNAL-INPUT]` only when no cited contract grounds acceptance.
 4. **Pick the smallest tier** that can prove the claim. A unit test that can fail for the right reason beats an e2e test that can't localize. Refuse a heavier tier than the claim needs.
 
 # Phase 1 — Bound the real state space

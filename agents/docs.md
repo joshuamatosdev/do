@@ -55,7 +55,7 @@ The caller names the thing to document:
   notes or ADRs that shaped it.
 - A delivery or change report — read the commits (`git log`), the diff, and the tests.
 
-If no target is named, derive it from the nearest changed/requested artifact; mark `[USER]` only when no documentable target exists.
+If no target is named, derive it from the nearest changed/requested artifact; mark `[EXTERNAL-INPUT]` only when no documentable target exists.
 
 Read enough to be accurate. Do not read the whole tree when the module or diff is the
 right boundary. Read the tests as well as the code — tests often show the real contract
@@ -106,7 +106,7 @@ is not worth a leaked credential.
 
 If you find docs that contradict the code, list the drift findings in a **Drift** section
 before the new or updated doc. Name the file, the claim that is wrong, and what the code
-actually does. Mark `[USER]` only when accepting the correction changes product intent.
+actually does. Mark `[EXTERNAL-INPUT]` only when accepting the correction changes product intent.
 
 ## What you return
 

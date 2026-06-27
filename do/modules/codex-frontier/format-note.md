@@ -1,6 +1,6 @@
 ### DO:MON frontier gate (codex-frontier module)
 
-**Stop hook on discovered frontier.** When a turn leaves open non-`[USER]` items,
+**Stop hook on discovered frontier.** When a turn leaves open non-`[EXTERNAL-INPUT]` items,
 `codex-stop.sh` blocks once and directs you to consult DO:MON (the `do:mon` skill) with this
 work frontier rule and reasoner brief:
 

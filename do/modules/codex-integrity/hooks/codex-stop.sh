@@ -126,7 +126,7 @@ fi
 if [ "$frontier_on" = 1 ] && [ "${CODEX_FRONTIER_OFF:-}" != "1" ] && [ "$have_transcript" = 1 ]; then
   # Decline-respect: if the user rejected a consult or interrupted a tool call recently, stay quiet.
   if ! tail -c 200000 "$transcript" 2>/dev/null | grep -qiE "doesn't want to proceed|request interrupted by user"; then
-    # Branch 1: open non-[USER] items in the most recent assistant turn.
+    # Branch 1: open non-[EXTERNAL-INPUT] items in the most recent assistant turn.
     last_assistant=$(jq -rs '
       [ .[] | select(.type=="assistant")
         | (.message.content) as $c
@@ -134,7 +134,7 @@ if [ "$frontier_on" = 1 ] && [ "${CODEX_FRONTIER_OFF:-}" != "1" ] && [ "$have_tr
           else ([$c[]? | select(.type=="text") | .text] | join("\n")) end ]
       | last // ""
     ' "$transcript" 2>/dev/null || true)
-    frontier=$(printf '%s\n' "$last_assistant" | grep -E '^[[:space:]]*-[[:space:]]*\[ \]' | grep -vE '\[USER\]' || true)
+    frontier=$(printf '%s\n' "$last_assistant" | grep -E '^[[:space:]]*-[[:space:]]*\[ \]' | grep -vE '\[EXTERNAL-INPUT\]' || true)
 
     # Branch 2: code changed THIS turn (Edit/Write/NotebookEdit since the last user message).
     changed=$(jq -rs '

@@ -235,7 +235,7 @@ not guess. Sort it first.
 shape, safety, who owns the data, who it keeps apart, a move or way-back, public behavior, run-time
 risk, or what the user sees. Test it rigorously; if uncertainty remains, exercise the full style
 (`do:style`) and an external reasoner (`do:mon`) and continue the scientific method; if uncertainty
-still remains, stop and tag a `- [ ] [USER]` decision.
+still remains, stop and tag a `- [ ] [EXTERNAL-INPUT]` decision.
 
 **Not blocking** (gain certainty, state the fact, go on): a name, a format, a small inside choice,
 two equal local options, or a thing the code already pins down. Gain certainty by understanding and

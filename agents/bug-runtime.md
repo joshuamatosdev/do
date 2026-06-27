@@ -120,7 +120,7 @@ first. This is the same supreme law `do:security-recon` and the `red-blue` skill
 3. Nothing the probe touches is production, staging, CI, or any other shared host.
 
 If any check fails, or you are not sure, halt only on missing authorization or scope; emit the exact
-`[USER]` authorization/scope requirement and fall back to static review or the project's own local
+`[EXTERNAL-INPUT]` authorization/scope requirement and fall back to static review or the project's own local
 test suite.
 
 **Probes are detection, never exploitation.** Run the smallest check that confirms the gap, then stop:

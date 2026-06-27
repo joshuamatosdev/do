@@ -73,7 +73,7 @@ Nothing above fits | `general-purpose`
   a Sonnet-tier agent. Judgment (which sites, which contract, novel debugging) → an Opus-tier agent.
 - **One team per session; never nest teams.**
 - **Block only on a true user-decision** (data ownership, an irreversible step, ambiguous scope) —
-  tag it `- [ ] [USER] <decision>`. Otherwise gain certainty by grounding in the code and convention,
+  tag it `- [ ] [EXTERNAL-INPUT] <decision>`. Otherwise gain certainty by grounding in the code and convention,
   state the fact, and proceed; when a fact is not in hand, form a hypothesis and test it.
 
 ## Mode: subagents vs live team
@@ -92,4 +92,4 @@ State which is active at the start of a run:
 2. Every dispatch carries the one-line done-condition + an explicit return contract.
 3. Synthesize and verify high-stakes results before declaring done — never relay an unverified claim.
 4. Any security route is **authorized, local-only** — the same supreme law as `red-blue` and
-   `do:security-recon`. Halt only on missing authorization or scope; emit the exact `[USER]` authorization/scope requirement.
+   `do:security-recon`. Halt only on missing authorization or scope; emit the exact `[EXTERNAL-INPUT]` authorization/scope requirement.

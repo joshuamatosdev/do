@@ -60,9 +60,11 @@ request satisfied` is a clean, valid terminal. Surface hard technical/design dec
 `- [ ] [DO:MON] <decision>` and immediately run `do:mon` rather than waiting for the user. The
 consult prompt should provide relevant code/evidence and ask for code, implementation ideas,
 definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution. Reserve
-`- [ ] [USER]` only for authority the agent cannot exercise: credentials, legal/business approval,
-destructive action, or public-release/go-no-go approval. "Awaiting your direction" is never a
-terminal state.
+`- [ ] [EXTERNAL-INPUT]` only for a true terminal the agent cannot resolve: a credential it cannot
+compute, or a SAFETY_GATE (irreversible AND outward AND consequential — destructive action,
+public-release / go-no-go). It is admissible only when EARNED via the terminal-discipline §4
+falsification protocol and carrying a RoundLog (§5); `[USER]` is repealed. "Awaiting your direction"
+is never a terminal state.
 
 ### `## Proof`
 
@@ -71,7 +73,7 @@ REPORT + FULL. Evidence for the claims this turn makes: file:line, command outpu
 ### `## Remaining Steps`
 
 What is left **to fulfill the request** and drain the discovered frontier. One `- [ ] step`
-per item; `- [x] None — <proof>` when the request and frontier are complete. An open non-`[USER]`
+per item; `- [x] None — <proof>` when the request and frontier are complete. An open non-`[EXTERNAL-INPUT]`
 item means the turn is **not** done — do it, don't ask.
 
 Work frontier:
@@ -91,10 +93,11 @@ processes unless the user explicitly authorizes it.
 Execution loop:
 `objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop`.
 
-The only sanctioned terminal open item is a genuine user-authority decision
-`- [ ] [USER] <the specific approval/authority only the user can provide>`. Hard architecture,
+The only sanctioned terminal open item is an EXTERNAL-INPUT decision
+`- [ ] [EXTERNAL-INPUT] <the credential or SAFETY_GATE approval only the user can provide>`, earned
+via terminal-discipline §4 and carrying a RoundLog (§5); `[USER]` is repealed. Hard architecture,
 design, outward-impact, acceptance-criteria, tradeoff, or scalability decisions are not terminal
-user gates; surface them as `- [ ] [DO:MON] <decision>`, consult `do:mon`, verify the answer, choose,
+gates; surface them as `- [ ] [DO:MON] <decision>`, consult `do:mon`, verify the answer, choose,
 and continue. A blocker escalates to `do:mon`; if `do:mon` is unavailable, use `codex --decide` or
 `do:change-skeptic`.
 
@@ -163,7 +166,7 @@ Edge case test | |
 
 ## Stop-Work Checklist (confirm before ending a turn)
 
-- Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [USER]` authority decisions the agent cannot make. Do not tag safe tool work, pushable blockers, technical design choices, or beneath-attention trivia as `[USER]`. Mark hard design/architecture/tradeoff/scalability decisions as `[DO:MON]`, consult `do:mon`, verify the answer, and keep going. Open non-`[USER]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `do:mon` first, then `codex --decide` / `do:change-skeptic` only as fallback. For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
+- Stop only when the request is complete, the discovered frontier is drained, and remaining items are only `- [ ] [EXTERNAL-INPUT]` decisions the agent cannot make (a credential, or a SAFETY_GATE), each earned via terminal-discipline §4 and carrying a RoundLog (§5; `[USER]` is repealed). Do not tag safe tool work, pushable blockers, technical design choices, or beneath-attention trivia as `[EXTERNAL-INPUT]`. Mark hard design/architecture/tradeoff/scalability decisions as `[DO:MON]`, consult `do:mon`, verify the answer, and keep going. Open non-`[EXTERNAL-INPUT]` work or "awaiting your direction" fails the continuation gate; for a real blocker fire `do:mon` first, then `codex --decide` / `do:change-skeptic` only as fallback. For big multi-turn goals, `/goal "<measurable, evidence-based condition>"` holds the loop to completion.
 
 - Agent-created rollout / flip / readiness gates are not terminal user decisions. If they are needed
   for the requested feature to be coherent, drain them or mark the feature incomplete.

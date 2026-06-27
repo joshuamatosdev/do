@@ -8,10 +8,11 @@ const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
 // Stop hook validate-continuation.sh: the SEMANTIC completion gate. It BLOCKS a turn that is
 // ending while its own response still lists actionable work, uses a legacy escape tag,
-// or hands back passively ("awaiting your direction"). [USER] = a decision only the user can make.
+// or hands back passively ("awaiting your direction"). [EXTERNAL-INPUT] = the sole terminal (a credential, or a SAFETY_GATE); [USER] is repealed.
 // Discovered work is a frontier to drain, not a future queue. A claimed blocker or repeated
-// no-progress escalates with a "Never-Stop-Escalate" reason naming `do:mon`. A [USER]-tagged
-// authority decision, a clean turn, or the hard iteration cap ALLOWS. Faithful test -- runs the bash hook;
+// no-progress escalates with a "Never-Stop-Escalate" reason naming `do:mon`. A RoundLog-backed
+// authority decision (terminal-discipline §5/§6 -- bare [USER] is repealed), a clean turn, or the
+// hard iteration cap ALLOWS. Faithful test -- runs the bash hook;
 // skipped where bash/jq is unavailable.
 function has(bin) { try { execFileSync("bash", ["-c", `command -v ${bin}`], { stdio: "ignore" }); return true; } catch { return false; } }
 const SKIP = !has("bash") ? "bash unavailable" : (!has("jq") ? "jq unavailable" : false);
@@ -80,6 +81,17 @@ function run(dir, tf, stopActive = false) {
 const isBlock = (out) => out.includes('"block"');
 
 const RS = (body) => `## Remaining Steps\n${body}`;
+
+// A well-formed RoundLog (terminal-discipline §5) — the earned-terminal contract the gate now
+// requires before an [EXTERNAL-INPUT] authority decision may end the turn. The hook checks for
+// the distinctive keys RoundLog / trials / converged / concurrence.
+const ROUNDLOG =
+  "\n\n```RoundLog\n" +
+  "candidate: approve the production deploy\n" +
+  "trials: internal-reasoner no-action; consult-reasoner no-action; adversarial-review no-action; creative-analysis no-action; driven-directive no-action\n" +
+  "converged: true\n" +
+  "concurrence: adversarial = no-action\n" +
+  "```";
 
 test("open '- [ ]' with no progress -> BLOCK (layer 1, not escalate)", { skip: SKIP }, () => {
   const d = project();
@@ -164,13 +176,13 @@ test("genuine prose question still BLOCKs even when code spans are present", { s
   assert.ok(out.includes("act-and-finish"), "reason must name the act-and-finish policy");
 });
 
-test("[USER] decision phrased WITHOUT a '?' -> still ALLOW (regression)", { skip: SKIP }, () => {
+test("authority decision phrased WITHOUT a '?', WITH a RoundLog -> ALLOW (regression)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do it" },
-    { role: "assistant", text: RS("- [ ] [USER] approve the production deploy") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] approve the production deploy") + ROUNDLOG },
   ]);
-  assert.equal(isBlock(run(d, tf)), false, "a real user decision with no '?' still releases the gate");
+  assert.equal(isBlock(run(d, tf)), false, "a real authority decision with no '?', earned with a RoundLog, releases the gate");
 });
 
 test("all '- [x]' + evidence, clean -> ALLOW", { skip: SKIP }, () => {
@@ -182,11 +194,11 @@ test("all '- [x]' + evidence, clean -> ALLOW", { skip: SKIP }, () => {
   assert.equal(isBlock(run(d, tf)), false);
 });
 
-test("all open items [USER]-tagged -> ALLOW (escape tag)", { skip: SKIP }, () => {
+test("all open items authority-tagged, WITH a RoundLog -> ALLOW", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do the thing" },
-    { role: "assistant", text: RS("- [ ] [USER] approve the production deploy") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] approve the production deploy") + ROUNDLOG },
   ]);
   assert.equal(isBlock(run(d, tf)), false);
 });
@@ -208,11 +220,11 @@ test("[DO:MON] design decision -> BLOCK with external-reasoner brief", { skip: S
   assert.match(out, /long-term scalable/i);
 });
 
-test("[USER] technical design decision -> BLOCK and reroute to DO:MON", { skip: SKIP }, () => {
+test("[EXTERNAL-INPUT] technical design decision -> BLOCK and reroute to DO:MON", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "optimize the workflow" },
-    { role: "assistant", text: RS("- [ ] [USER] decide the architecture tradeoff for long-term scalability") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] decide the architecture tradeoff for long-term scalability") },
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "technical design decisions must not be parked on the user");
@@ -318,54 +330,84 @@ test("progress made (tool calls) -> still BLOCK but resets stall (layer 1)", { s
   assert.ok(!out.includes("Never-Stop-Escalate"), "progress resets stall -> stays layer-1, no escalation");
 });
 
-test("[USER] on a doable ACTION (restart) -> BLOCK (no handing your own work back)", { skip: SKIP }, () => {
+test("[EXTERNAL-INPUT] on a doable ACTION (restart) -> BLOCK (no handing your own work back)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "fix it" },
-    { role: "assistant", text: RS("- [ ] [USER] Restart the backend — it crashed under host load") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] Restart the backend — it crashed under host load") },
   ]);
   const out = run(d, tf);
-  assert.equal(isBlock(out), true, "a [USER] item that is really a doable action must not end the turn");
+  assert.equal(isBlock(out), true, "an [EXTERNAL-INPUT] item that is really a doable action must not end the turn");
   assert.ok(!out.includes("Never-Stop-Escalate"), "first nudge is layer-1, not escalation");
 });
 
-test("[USER] on a doable ACTION (commit) -> BLOCK", { skip: SKIP }, () => {
+test("[EXTERNAL-INPUT] on a doable ACTION (commit) -> BLOCK", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do it" },
-    { role: "assistant", text: RS("- [ ] [USER] commit the resync script when ready") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] commit the resync script when ready") },
   ]);
   assert.equal(isBlock(run(d, tf)), true);
 });
 
-test("[USER] on a genuine DECISION (approve) -> ALLOW (real escalation preserved)", { skip: SKIP }, () => {
+test("genuine DECISION (approve) WITH a RoundLog -> ALLOW (real escalation preserved)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do it" },
-    { role: "assistant", text: RS("- [ ] [USER] approve the production deploy") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] approve the production deploy") + ROUNDLOG },
   ]);
-  assert.equal(isBlock(run(d, tf)), false, "a real user decision must still release the gate");
+  assert.equal(isBlock(run(d, tf)), false, "a real authority decision, earned with a RoundLog, must still release the gate");
 });
 
-test("[USER] decision that mentions an action verb (which DB to restart) -> ALLOW (decision word wins)", { skip: SKIP }, () => {
+test("decision that mentions an action verb (which DB to restart), WITH a RoundLog -> ALLOW (decision word wins)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "do it" },
-    { role: "assistant", text: RS("- [ ] [USER] decide which service to restart first") },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] decide which service to restart first") + ROUNDLOG },
   ]);
-  assert.equal(isBlock(run(d, tf)), false, "decision phrasing exempts even when an action verb appears");
+  assert.equal(isBlock(run(d, tf)), false, "decision phrasing exempts even when an action verb appears, once earned with a RoundLog");
 });
 
-test("[USER] flip-gate build-vs-defer handoff -> BLOCK (agent-created gate is frontier work)", { skip: SKIP }, () => {
+test("[EXTERNAL-INPUT] flip-gate build-vs-defer handoff -> BLOCK (agent-created gate is frontier work)", { skip: SKIP }, () => {
   const d = project();
   const tf = transcript(d, [
     { role: "user", text: "finish and land the whole feature" },
     {
       role: "assistant",
-      text: RS("- [ ] [USER] decide whether to build the flip-gates now or leave them deferred until cutover is scheduled"),
+      text: RS("- [ ] [EXTERNAL-INPUT] decide whether to build the flip-gates now or leave them deferred until cutover is scheduled"),
     },
   ]);
   const out = run(d, tf);
   assert.equal(isBlock(out), true, "agent-runnable rollout prerequisites must not be hidden as a user choice");
   assert.ok(out.includes("agent-created gate"), "reason should name the invented-gate handoff");
+});
+
+// --- terminal-discipline §5/§6: a terminal is admissible ONLY with a RoundLog. -----------------
+// §6 RED fixture for "defining the gate": the gate MUST reject an unearned terminal. This negative
+// case is the falsifier that makes the wiring claim itself falsifiable.
+test("authority decision WITHOUT a RoundLog -> BLOCK (INADMISSIBLE, §6 RED fixture)", { skip: SKIP }, () => {
+  const d = project();
+  const tf = transcript(d, [
+    { role: "user", text: "do it" },
+    { role: "assistant", text: RS("- [ ] [EXTERNAL-INPUT] approve the production deploy") },
+  ]);
+  const out = run(d, tf);
+  assert.equal(isBlock(out), true, "a bare terminal with no RoundLog is unearned -> INADMISSIBLE");
+  assert.ok(out.includes("INADMISSIBLE"), "reason must name the terminal as INADMISSIBLE");
+  assert.ok(out.includes("RoundLog"), "reason must require the RoundLog");
+  assert.ok(out.includes("terminal-discipline"), "reason must point at terminal-discipline");
+});
+
+// §6 RED fixture for the [USER] repeal. The banned token appears ONLY here, as a negative case the
+// gate MUST reject — never as an allowed terminal. Even carrying a RoundLog, [USER] never earns the
+// terminal: using the repealed token is itself the violation. This is the falsifier for the repeal.
+test("[USER] tag is REPEALED -> BLOCK even with a RoundLog (banned token)", { skip: SKIP }, () => {
+  const d = project();
+  const tf = transcript(d, [
+    { role: "user", text: "do it" },
+    { role: "assistant", text: RS("- [ ] [USER] approve the production deploy") + ROUNDLOG },
+  ]);
+  const out = run(d, tf);
+  assert.equal(isBlock(out), true, "the repealed [USER] token must never end the turn, RoundLog or not");
+  assert.ok(out.includes("REPEALED"), "reason must name [USER] as REPEALED");
 });
