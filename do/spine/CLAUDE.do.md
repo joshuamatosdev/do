@@ -1,4 +1,4 @@
-<!-- DO:BEGIN (managed by /do:run — do not edit inside this block; run /do:run update) -->
+<!-- DO:BEGIN (managed by /do:run — do not edit inside this block; re-run /do:run setup to refresh) -->
 ## Engineering workflow
 
 This project uses a portable engineering workflow (installed via `/do:run`).

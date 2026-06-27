@@ -1,6 +1,6 @@
 ---
-description: 'do engineering workflow. Subcommands: setup, add, update, fix, status, execute, review, verify, handoff.'
-argument-hint: setup [all] | add <module> | status | fix | compress plain|strict|off | style | mon on|off|status | codex on|off|status|toggle | execute | review | verify | handoff | update
+description: 'do engineering workflow. Subcommands: setup, add, fix, status, execute, review, verify, handoff.'
+argument-hint: setup [all] | add <module> | status | fix | compress plain|strict|off | style | mon on|off|status | codex on|off|status|toggle | execute | review | verify | handoff
 ---
 
 You are running the `/do:run` command. The argument is: $ARGUMENTS
@@ -18,7 +18,6 @@ Invoke the `setup` skill and route on the first token of the argument:
 - `review`  -> follow skills/setup/references/review.md
 - `verify`  -> follow skills/setup/references/verify.md
 - `handoff` -> follow skills/setup/references/handoff.md
-- `update`  -> follow skills/setup/references/update.md
 - (empty)  -> print the do banner and list available subcommands
 - anything else -> tell the user that subcommand is not in the MVP and list what is.
 

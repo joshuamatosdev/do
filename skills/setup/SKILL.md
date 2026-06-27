@@ -1,6 +1,6 @@
 ---
 name: setup
-description: do workflow — installer, dashboard, and phase router. Use when the user invokes any do workflow subcommand (setup, add, update, fix, status, execute, review, verify, handoff) or asks to install/verify/inspect the do workflow or run a phase in a project.
+description: do workflow — installer, dashboard, and phase router. Use when the user invokes any do workflow subcommand (setup, add, fix, status, execute, review, verify, handoff) or asks to install/verify/inspect the do workflow or run a phase in a project.
 ---
 
 # setup — do workflow
@@ -13,7 +13,6 @@ Route on the command the user ran. Each command has a reference file — read it
 | `status`  | `references/status.md`  |
 | `fix`     | runs `${CLAUDE_PLUGIN_ROOT}/lib/doctor.js` — reports version / drift / missing soft-deps / settings drift (module env flags turned off after install) |
 | `add`     | `references/add.md`     |
-| `update`  | `references/update.md`  |
 | `remove`  | `references/remove.md`  |
 | `execute` | `references/execute.md` |
 | `review`  | `references/review.md`  |

@@ -308,7 +308,6 @@ only against an authorized local target. The deterministic one-shot version is t
 | `/do:run status` | Dashboard: version, enabled modules, drift, missing deps, `git status`. |
 | `/do:run fix` | Diagnose install health — version, drift, missing soft-deps, settings drift (report only, no auto-repair). |
 | `/do:run add <module>` | Enable a module on an existing install. |
-| `/do:run update` | Refresh the install to the current plugin version; keeps `do.config.json`. |
 | `/do:run remove` | Clean uninstall: strip the managed `CLAUDE.md` block + do-owned hooks/env, restore the pre-do backup, remove the manifest + installed files. |
 | `/do:run execute` | Run a plan under the model-discipline guide (Sonnet for mechanical, Opus for judgment). |
 | `/do:run review` | Run code / security / adversarial review chosen by diff risk. |
@@ -317,6 +316,12 @@ only against an authorized local target. The deterministic one-shot version is t
 | `/do:run style` | Load the full five-moves engineering style. |
 | `/do:run compress plain\|strict\|off` | Set the reply-compression level. |
 | `/do:run codex on\|off\|status` · `/do:run mon on\|off\|status` | Toggle the integrity review and the external reasoner. |
+
+**Updating the plugin.** Plugin updates go through Claude Code's own plugin manager, not a `do`
+subcommand: run `claude plugin update do@doctrineone-labs`, then **restart Claude Code** to load the
+new version (the running session is pinned to the version it started with — no in-session command can
+hot-swap it). After the restart, re-run `/do:run setup` in a project to refresh its copied workflow
+files to the new version (`do.config.json` is preserved).
 
 The phase commands are thin routers into the underlying skills — they apply the five moves and model discipline, then run the right skill. The skills still work on their own.
 
