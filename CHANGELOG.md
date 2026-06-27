@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.30] — 2026-06-27
+
+### Changed
+
+- **Move 2 (minimum sufficient)** — names the frame-error that conflates "minimum sufficient" with
+  the smallest *local* change: existing structure — a library, type, contract, or schema already
+  present — is a decision made, a constraint to absorb before scoping "minimum," not an option to
+  route around to touch fewer lines. Encoded in the always-on spine (`do/spine/one.md`) and the full
+  `style` skill (with the worked OID4VCI stringly-typed case), and made enforceable in the `review`
+  agent's move-2 lens (a change that routes around a present library/type is flagged **not met**).
+
 ## [0.1.29] — 2026-06-27
 
 ### Added
@@ -178,7 +189,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.30...HEAD
+[0.1.30]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...do--v0.1.30
 [0.1.29]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...do--v0.1.29
 [0.1.28]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...do--v0.1.28
 [0.1.27]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...do--v0.1.27
