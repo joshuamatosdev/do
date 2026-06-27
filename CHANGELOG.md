@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.28] — 2026-06-27
+
+### Added
+
+- **terminal-discipline** — `terminal-discipline.md` (the stop-or-act spec: legal · mathematical ·
+  code · falsification) installs to `.claude/do/`, with the **`terminal-check`** skill as its
+  self-run application: before stopping, classify every open item, take the first ACT, and stop only
+  on a RoundLog-backed `[EXTERNAL-INPUT]`. The skill is the self-run primary; the
+  `validate-continuation.sh` Stop hook is the deterministic backstop.
+- **`prompt-builder` skill** — build ONE structured prompt from six components (role + task, context,
+  instructions, example, repeated critical info, anti-hallucination block).
+- **False-done tells** — `DO-CAP-002` (a masking fallback — an empty / null-object / no-op stub in
+  place of a real implementation — is a fabrication unless mode-scoped and proven inert), plus the
+  false-done-on-failing-gate and rhetorical-wall rules and a §6 worked RED in `terminal-discipline.md`.
+
+### Changed
+
+- **`[USER]` is repealed** — the sole turn-terminal is now `[EXTERNAL-INPUT]` (a credential, or a
+  SAFETY_GATE), admissible only with a §5 RoundLog. Migrated across the continuation gate, the
+  codex-frontier drain, `RESPONSE-FORMAT.md`, `execution-policy.yaml`, agents, and skills. (The
+  conversation role-label `[USER]` / `[ASSISTANT]` is a separate namespace and is untouched.)
+- **Continuation gate reason language** → the terminal-discipline register, each clause tagged with
+  the section it enforces: `§1 ASK`, `§3 PUNT`, `§3 CONSULT`, `§5 INADMISSIBLE`, `[USER] REPEALED`,
+  `§4 escalation`.
+
+### Removed
+
+- **`/do:run update`** — removed; it only ever re-merged the already-loaded plugin, never downloaded
+  one (the name lied). The refresh path is `claude plugin update do@doctrineone-labs` + restart, then
+  `/do:run setup` per project.
+
 ## [0.1.27] — 2026-06-26
 
 ### Changed
@@ -131,7 +162,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...HEAD
+[0.1.28]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...do--v0.1.28
 [0.1.27]: https://github.com/joshuamatosdev/do/compare/do--v0.1.26...do--v0.1.27
 [0.1.26]: https://github.com/joshuamatosdev/do/compare/do--v0.1.25...do--v0.1.26
 [0.1.25]: https://github.com/joshuamatosdev/do/compare/do--v0.1.24...do--v0.1.25

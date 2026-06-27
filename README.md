@@ -8,7 +8,7 @@
 
 `do` is a Claude Code plugin. One command installs a portable engineering system.
 
-- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.27`
+- Plugin: `do` · Marketplace: `doctrineone-labs` · Version: `0.1.28`
 
 ---
 ## What it does
