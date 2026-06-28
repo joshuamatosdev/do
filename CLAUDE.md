@@ -55,8 +55,8 @@ ran `/do:run setup` — which is why the same hook can be loaded yet silent.
 
 ### Supporting layout
 - `lib/` = the `/do:run` engine: `install`, `uninstall`, `update`, `detect`, `doctor`, `modules`,
-  `merge-settings`, `paths`, `version`, `which`. It is the logic behind the single command
-  `commands/run.md` and the `setup` skill.
+  `merge-settings`, `paths`, `version`, `which`. It is the logic behind the `/do:run` command
+  (`commands/run.md`) and the `setup` skill.
 - `hooks/` (top-level) = JS activators/trackers for the two sticky session modes, **compress** and **mon**.
 - `agents/` = 16 dispatchable subagents · `skills/` = 20 in-repo skills (4 more ship with modules,
   24 total per README) · `workflows/` = 3 deterministic multi-agent scripts (`adr-spec.js`,
