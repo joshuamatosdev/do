@@ -11,13 +11,6 @@ description: |
   assistant: "I'll dispatch the do:distinguished-engineer agent to build the full vertical stack test-first and pass the production gate."
   <commentary>A full feature with its vertical stack — implementation, not review or design — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: The user is tempted by a quick hack and wants it done right.
-  user: "We need soft-delete on orders shipped properly — no TODOs, with the migration and tests."
-  assistant: "I'll use the do:distinguished-engineer agent to implement it test-first with the forward-only migration and full gate."
-  <commentary>Production-grade implementation that refuses stop-gaps — this agent, not do:engineer (design-only basis).</commentary>
-  </example>
 model: opus
 color: red
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Agent", "Skill", "WebSearch", "WebFetch"]

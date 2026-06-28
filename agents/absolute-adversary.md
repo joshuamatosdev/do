@@ -15,13 +15,6 @@ description: |
   assistant: "I'll dispatch the do:absolute-adversary agent to prosecute the plan, diff, claims, and commit together and return REJECT, REPAIR, or WITHSTOOD."
   <commentary>A maximal, whole-body adversarial pass — exactly this agent's job, not a single-stage skeptic.</commentary>
   </example>
-
-  <example>
-  Context: The user distrusts an "it all works" claim across a multi-part change.
-  user: "I don't believe this is actually done. Tear it apart."
-  assistant: "I'll dispatch the do:absolute-adversary agent; it re-runs every 'it works' and attacks the plan↔code↔commit↔claim seams."
-  <commentary>Assume-compromise, verify-or-it-didn't-happen across the whole body of work — the absolute adversary.</commentary>
-  </example>
 model: inherit
 color: red
 tools: ["Agent", "Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]

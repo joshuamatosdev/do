@@ -13,13 +13,6 @@ description: |
   assistant: "I'll dispatch bug-static to trace the control flow, data paths, and error handling in the payment handler."
   <commentary>A pre-merge logic audit without running the code — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: A bug was reported in production and the user wants to understand the code path.
-  user: "Users are getting a silent failure when they update their profile. Find it in the code."
-  assistant: "I'll use bug-static to trace the update path, find where errors are swallowed, and name the broken assumption."
-  <commentary>Tracing a silent failure through code paths is static analysis work.</commentary>
-  </example>
 model: inherit
 color: cyan
 tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]

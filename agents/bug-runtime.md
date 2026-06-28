@@ -13,13 +13,6 @@ description: |
   assistant: "I'll dispatch bug-runtime to reproduce the failure, trace the output, and locate the root cause."
   <commentary>A failing test that needs reproduction and runtime observation — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: The user suspects a behavior regression but has no clear repro yet.
-  user: "Something changed in the checkout flow — it's not always saving the order. Find the bug."
-  assistant: "I'll use bug-runtime to probe the checkout behavior, run the relevant tests, and surface the failure path."
-  <commentary>A behavioral mismatch with no confirmed repro calls for dynamic analysis.</commentary>
-  </example>
 model: inherit
 color: cyan
 tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]

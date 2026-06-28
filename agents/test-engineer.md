@@ -11,13 +11,6 @@ description: |
   assistant: "I'll dispatch the do:test-engineer agent to author one falsifiable test at the smallest tier and prove it flake-immune."
   <commentary>One behavior claim about one named SUT — the single-unit tier; this agent, not the module specialist do:test-engineer-module.</commentary>
   </example>
-
-  <example>
-  Context: A test fails intermittently on CI.
-  user: "This test is flaky — passes locally, fails on CI half the time. Fix it."
-  assistant: "I'll use the do:test-engineer agent to rewrite it deterministic and prove flake-immunity by repeat + random-order runs."
-  <commentary>Fixing one brittle/flaky test is squarely this agent — not the whole-module do:test-engineer-module.</commentary>
-  </example>
 model: inherit
 color: green
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Skill", "WebSearch", "WebFetch"]

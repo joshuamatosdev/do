@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.31] — 2026-06-28
+
+### Changed
+
+- **Agents** — trimmed the redundant second `<example>` block from the ten largest agent
+  descriptions (`hexagonal-refactor`, `spring-boot-test-strategist`, `test-engineer-module`,
+  `security-recon`, `distinguished-engineer`, `bug-static`, `absolute-adversary`, `bug-runtime`,
+  `test-engineer`, `change-skeptic`) to bring the loaded agent-description total back under Claude
+  Code's 15k-token budget (~15.7k → ~14.0k). Each agent keeps its full first paragraph, trigger
+  phrases, and one worked example, so routing/selection signal is preserved.
+
 ## [0.1.30] — 2026-06-27
 
 ### Changed
@@ -189,7 +200,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.30...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.31...HEAD
+[0.1.31]: https://github.com/joshuamatosdev/do/compare/do--v0.1.30...do--v0.1.31
 [0.1.30]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...do--v0.1.30
 [0.1.29]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...do--v0.1.29
 [0.1.28]: https://github.com/joshuamatosdev/do/compare/do--v0.1.27...do--v0.1.28

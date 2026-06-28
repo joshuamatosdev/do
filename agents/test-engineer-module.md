@@ -11,13 +11,6 @@ description: |
   assistant: "I'll dispatch the do:test-engineer-module agent to author the two orthogonal tiers after a state-space contract pre-flight."
   <commentary>A whole module needing per-layer + full-slice tiers — the module specialist, not single-unit do:test-engineer.</commentary>
   </example>
-
-  <example>
-  Context: The user wants the slice wired through real adapters and a real DB.
-  user: "Write the integration test that runs the order use case through the real persistence adapter and Postgres."
-  assistant: "I'll use the do:test-engineer-module agent to author the full-slice integration test with the module fixture, mocking only true external edges."
-  <commentary>Full-slice, real-DB integration inside a module is this agent's slice tier — beyond a single-unit do:test-engineer test.</commentary>
-  </example>
 model: inherit
 color: green
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Skill", "WebSearch", "WebFetch"]

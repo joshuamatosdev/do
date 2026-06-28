@@ -18,13 +18,6 @@ description: |
   <commentary>Explicit local lab IP + authorized context — exactly this agent's job.</commentary>
   </example>
 
-  <example>
-  Context: The user has a bug-bounty policy and wants help writing a report.
-  user: "I found an IDOR in a public bug-bounty program. Help me write the report."
-  assistant: "I'll use the do:security-recon agent to draft the report — report writing for public programs is supported; active probing of public hosts is not."
-  <commentary>Report writing and severity scoring for public programs are in scope; no active scanning of remote hosts happens here.</commentary>
-  </example>
-
   Refuses: any active scanning or probing outside the local allowlist; destructive testing
   (DoS, ransomware, persistence, lateral movement, malware); credential theft; phishing or
   social engineering; data exfiltration; out-of-band pressure on triage teams; public

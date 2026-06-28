@@ -11,13 +11,6 @@ description: |
   assistant: "I'll dispatch the spring-boot-test-strategist agent to design the strategy and generate the slice, integration, security, and contract tests with standard Spring tooling."
   <commentary>A whole-application Spring Boot testing strategy spanning layers, fields, and security — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: The user wants field-exhaustive, deterministic coverage of DTOs, persistence, and async paths.
-  user: "Cover every field on the request/response DTOs and entities, plus the messaging and race-condition paths — no Thread.sleep."
-  assistant: "I'll use the spring-boot-test-strategist agent to drive field-exhaustiveness, JSON/persistence tests, and deterministic async/concurrency tests with Awaitility and Testcontainers."
-  <commentary>Field-exhaustiveness plus deterministic async/concurrency coverage with standard libraries — this agent.</commentary>
-  </example>
 model: inherit
 color: green
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Skill", "WebSearch", "WebFetch"]

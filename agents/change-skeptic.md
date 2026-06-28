@@ -16,13 +16,6 @@ description: |
   assistant: "I'll dispatch the do:change-skeptic agent as the in-session fallback; it returns ALLOW, BLOCK, or REPAIR."
   <commentary>The named fallback when codex is absent — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: The user wants a same-session second look at a change for hidden feature loss.
-  user: "Did that last change quietly drop anything? Interrogate it."
-  assistant: "I'll dispatch the do:change-skeptic agent to attack the turn's claims against what the code actually supports."
-  <commentary>Own-context adversarial integrity review of a turn — the agent form.</commentary>
-  </example>
 model: inherit
 color: orange
 tools: ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch", "Skill"]

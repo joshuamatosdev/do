@@ -11,13 +11,6 @@ description: |
   assistant: "I'll dispatch the do:hexagonal-refactor agent to map the layers, classify findings by severity, and produce a behavior-preserving refactor plan."
   <commentary>Examining a Spring Boot ports-and-adapters codebase and producing a severity-classified refactor plan — exactly this agent's job.</commentary>
   </example>
-
-  <example>
-  Context: The codebase has hand-rolled infrastructure that standard Spring would cover.
-  user: "We have a custom configuration loader and a service-locator registry — should those be standard Spring instead?"
-  assistant: "I'll use the do:hexagonal-refactor agent to plan replacing the custom loader with @ConfigurationProperties and the registry with Spring DI, behavior preserved."
-  <commentary>Preferring standard Spring Boot mechanisms over bespoke infrastructure, behavior-preserved — this agent, not the stack-agnostic do:distinguished-engineer.</commentary>
-  </example>
 model: opus
 color: orange
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash", "Agent", "Skill", "WebSearch", "WebFetch"]
