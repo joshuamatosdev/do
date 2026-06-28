@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.32] — 2026-06-28
+
+### Fixed
+
+- **`/do:adversarial-review`** — the auto-exposed workflow slash command failed with
+  `script contains control characters that would be hidden in the approval dialog`. Claude Code runs
+  an auto-registered `workflows/*.js` as an inline-`script` ("dynamic") `Workflow` call, and its
+  built-in approval validator rejects the inlined script even though the workflow file is byte-clean
+  (the control bytes are introduced by the harness when it re-encodes the script for the approval
+  dialog). Added `commands/adversarial-review.md`, a thin command that invokes the workflow by
+  `scriptPath` instead — the path form carries no inline script string, so the validator never fires
+  (matching the documented "run with the Workflow tool by path" intent). `red-blue-sweep` and
+  `adr-spec` share the same latent defect; the same one-line wrapper applies to them once the
+  explicit-command-over-auto-workflow shadow precedence is confirmed on reload.
+
 ## [0.1.31] — 2026-06-28
 
 ### Changed
@@ -200,7 +215,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.31...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.32...HEAD
+[0.1.32]: https://github.com/joshuamatosdev/do/compare/do--v0.1.31...do--v0.1.32
 [0.1.31]: https://github.com/joshuamatosdev/do/compare/do--v0.1.30...do--v0.1.31
 [0.1.30]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...do--v0.1.30
 [0.1.29]: https://github.com/joshuamatosdev/do/compare/do--v0.1.28...do--v0.1.29
