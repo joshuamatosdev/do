@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.33] — 2026-06-30
+
+### Changed
+
+- **Codex runs at full capability on every path.** The autonomous `codex-integrity` turn-end review
+  was throttled relative to the `codex` consult — read-only sandbox, no model/effort pin (it ran at
+  the config default), a 300s cap, and it reviewed only the pasted turn text. It now grounds the
+  review in the actual changed files, is pinned to `gpt-5.5` + `model_reasoning_effort=xhigh` +
+  `service_tier=priority`, runs `--sandbox workspace-write` and **edits the repo when it judges a fix
+  better** (no advise-only default), with the timeout raised to 600s. Codex's own edits are detected
+  (status + a hash of the unstaged diff, so a re-edit of an already-modified file is caught), surfaced
+  in the Stop output, and written to an audit log under `.claude/state/codex-integrity/`; the gate
+  blocks once so the writes are verified before the turn stops. The `codex` consult closer was
+  deepened the same way and its timeout raised to 1200s.
+- **`ASK_CODEX_ALLOW_EDITS=0`** forces read-only / advise-only on both the consult and the turn-end
+  review — the kill switch for the new edit-by-default behavior.
+- **Disclosure updated to match** (honest for every install): `module.json`, the README modules row,
+  the codex-integrity `format-note.md` (appended to `AGENTS.md` on setup), and the `codex` `SKILL.md`
+  now state that codex edits by default with the read-only kill switch. The secret-scrub before
+  external-LLM egress is unchanged and still fail-closed.
+
 ## [0.1.32] — 2026-06-28
 
 ### Fixed
@@ -215,7 +236,8 @@ First public release. Public-readiness hardening driven by a multi-agent audit.
 - README corrected: `protect-user-work.sh` is labeled a reserved no-op; the "zero runtime dependencies" claim now notes the hooks need bash/jq/PowerShell; the codex egress is disclosed.
 - Scrubbed private residue (personal email, internal project names, absolute machine paths) from docs and skill references.
 
-[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.32...HEAD
+[Unreleased]: https://github.com/joshuamatosdev/do/compare/do--v0.1.33...HEAD
+[0.1.33]: https://github.com/joshuamatosdev/do/compare/do--v0.1.32...do--v0.1.33
 [0.1.32]: https://github.com/joshuamatosdev/do/compare/do--v0.1.31...do--v0.1.32
 [0.1.31]: https://github.com/joshuamatosdev/do/compare/do--v0.1.30...do--v0.1.31
 [0.1.30]: https://github.com/joshuamatosdev/do/compare/do--v0.1.29...do--v0.1.30

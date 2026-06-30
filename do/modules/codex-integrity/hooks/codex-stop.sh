@@ -82,13 +82,34 @@ if [ "$integrity_on" = 1 ]; then
         advisories+=("do codex-integrity (adversarial mode): secret scrubber unavailable -- refusing to send unscrubbed turn text to Codex; run the do:change-skeptic agent as the in-session adversarial review of this turn (fail-open: infra failure does not block).")
       else
         pkt=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/do-adv-$$.txt")
+        # Empower mode (DEFAULT, owner directive 2026-06-30): codex reviews at MAXIMAL depth AND
+        # applies the fix directly when it judges one better -- not advise-only. Kill switch
+        # ASK_CODEX_ALLOW_EDITS=0 forces read-only/advise (mirrors skills/codex/codex.sh).
+        # SECURITY: the secret-scrub before egress (run-integrity step 2) is UNCHANGED and still
+        # fail-closed -- empowering WRITE does NOT relax the egress scrub.
+        if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "0" ]; then
+          adv_sandbox="read-only"
+          adv_act='You have READ-ONLY access this run -- do NOT edit. Report each finding and the exact fix you would apply.'
+        else
+          adv_sandbox="workspace-write"
+          adv_act='You have full workspace access (read AND write). When a problem is real and a correct, COMPLETE fix is within reach, APPLY it directly -- edit the repo and adjust/add its tests; do not merely advise, defer, stub, or ship a partial patch. State exactly what you changed. If a problem is real but you should NOT fix it autonomously (irreversible, needs a human decision, or out of scope), say so and leave it for the user.'
+        fi
         {
-          echo "ADVERSARIAL INTEGRITY REVIEW. Assume failure. Check false/unverified claims,"
-          echo "feature loss, stub/fixture-only delivery, hidden behavior changes, and"
-          echo "bugs introduced or left unfixed. Check discovered frontier work that can cause undesired behavior,"
-          echo "dropped blockers/options, and created or preserved tech debt."
-          echo "Read-only FS is available."
-          echo "End exactly: DECISION: ALLOW if clean; else DECISION: BLOCK + numbered issues."
+          echo "ADVERSARIAL INTEGRITY REVIEW -- maximal effort, no shallow pass. You are a Distinguished"
+          echo "Engineer reviewing the assistant's most recent turn in this repository. Assume failure."
+          echo
+          echo "Do NOT judge from the pasted turn text alone. GROUND the review in the actual repo: read the"
+          echo "changed files, the surrounding code, and the tests; verify every claim against what is on disk."
+          echo "Be exhaustive across: correctness; the invariants (security, tenant/authz isolation, data"
+          echo "integrity, contracts, auditability, failure behavior); feature loss; stub/fixture-only delivery;"
+          echo "hidden behavior changes; bugs introduced or left unfixed; discovered frontier work left undone;"
+          echo "dropped blockers/options; and tech debt created or preserved."
+          echo
+          echo "$adv_act"
+          echo
+          echo "End with exactly one final line:"
+          echo "DECISION: ALLOW   (turn is correct and complete; nothing left to fix)"
+          echo "DECISION: BLOCK   followed by a numbered list of what remains (and what you changed, if anything)"
           echo
           echo "=== TURN WORK (assistant text this turn) ==="
           printf '%s\n' "$scrubbed_text"
@@ -96,20 +117,61 @@ if [ "$integrity_on" = 1 ]; then
         runner="$hookdir/../run-integrity.sh"
         if [ -f "$runner" ]; then
           if [ -z "${INTEGRITY_CODEX_CMD:-}" ] && command -v codex >/dev/null 2>&1; then
+            # Maximal, consistent invocation -- mirrors skills/codex/codex.sh (the proven path on this
+            # host): pin gpt-5.5 + xhigh + priority, and use the bypass flag because genuine sandboxing
+            # is broken on this Windows host. -s carries the sandbox intent (workspace-write by default,
+            # read-only under the kill switch). One literal arg per line: no shell parse, no injection.
             export INTEGRITY_CODEX_ARGV="exec
---sandbox
-read-only
+--dangerously-bypass-approvals-and-sandbox
+-s
+$adv_sandbox
+-m
+gpt-5.5
+-c
+model_reasoning_effort=\"xhigh\"
+-c
+service_tier=\"priority\"
 -C
 $proj
 -"
           fi
-          export INTEGRITY_CODEX_TIMEOUT="${INTEGRITY_CODEX_TIMEOUT:-300}"
+          export INTEGRITY_CODEX_TIMEOUT="${INTEGRITY_CODEX_TIMEOUT:-600}"
+          # Detect codex's OWN edits this run so external writes are SEEN before stop. A plain status
+          # delta would MISS a codex re-edit of a file Claude already changed (same status line) -- the
+          # common turn-end case -- so snapshot status --porcelain PLUS a hash of the unstaged diff
+          # (content). Best-effort: cleanly no-ops when git is absent or $proj is not a repo.
+          adv_have_git=0; adv_changed=0; adv_pre=""
+          command -v git >/dev/null 2>&1 && adv_have_git=1
+          adv_snap() { ( cd "$proj" 2>/dev/null || exit 0; git status --porcelain 2>/dev/null; git diff 2>/dev/null | git hash-object --stdin 2>/dev/null ); }
+          [ "$adv_have_git" = 1 ] && adv_pre=$(adv_snap)
           out=$(bash "$runner" "$pkt" 2>/dev/null || true)
           rm -f "$pkt" 2>/dev/null || true
+          [ "$adv_have_git" = 1 ] && [ "$(adv_snap)" != "$adv_pre" ] && adv_changed=1
           if printf '%s' "$out" | grep -q '^SOURCE: codex'; then
-            if ! printf '%s' "$out" | grep -q 'DECISION: ALLOW'; then
+            verdict=$(printf '%s' "$out" | sed 's/^SOURCE: codex//')
+            worktree=""
+            [ "$adv_have_git" = 1 ] && worktree=$( cd "$proj" 2>/dev/null && git status --porcelain 2>/dev/null || true )
+            # Audit log: persist the review so external writes are inspectable after the fact.
+            log_dir="$proj/.claude/state/codex-integrity"
+            if mkdir -p "$log_dir" 2>/dev/null; then
+              ts=$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null || echo review)
+              {
+                echo "codex-integrity review @ ${ts}  sandbox=${adv_sandbox}  model=gpt-5.5 reasoning=xhigh tier=priority  codex_edited=${adv_changed}"
+                echo "---- worktree (git status --porcelain) ----"
+                printf '%s\n' "$worktree"
+                echo "---- codex verdict ----"
+                printf '%s\n' "$verdict"
+              } > "$log_dir/review-${ts}-$$.log" 2>/dev/null || true
+            fi
+            if [ "$adv_changed" = 1 ]; then
+              # Codex EDITED the repo this turn -> surface it and require verification before stop.
+              block_reasons+=("Codex (turn-end integrity review, workspace-write) EDITED the repo this turn. External-LLM writes must be reviewed before you stop. Current worktree changes (your turn + codex's edits):
+$worktree
+Verify now: run 'git diff' to see exactly what codex changed, run the project tests, confirm it is correct and complete -- then re-emit. Codex verdict:
+$verdict")
+            elif ! printf '%s' "$out" | grep -q 'DECISION: ALLOW'; then
               block_reasons+=("Adversarial Codex review flagged this turn (codex-integrity adversarial mode: block-on-anything-flagged). Address the issues, then re-emit. Codex verdict:
-$(printf '%s' "$out" | sed 's/^SOURCE: codex//')")
+$verdict")
             fi
           else
             advisories+=("do codex-integrity (adversarial mode): Codex unavailable -- run the do:change-skeptic agent as the in-session adversarial review of this turn (fail-open: infra failure does not block).")
@@ -158,10 +220,10 @@ if [ "$frontier_on" = 1 ] && [ "${CODEX_FRONTIER_OFF:-}" != "1" ] && [ "$have_tr
 
     if [ -n "$frontier" ] || [ -n "$align" ]; then
       do_mon_brief='DO:MON automated reasoner: run the do:mon skill (ChatGPT). Send the smallest scrubbed prompt that includes relevant code, local evidence, failing output, and the specific decision. Ask it to act as a senior tech-lead and AI creator of transforms: provide code where useful, discuss implementation ideas, definition of done, acceptance criteria, tradeoffs, and the long-term scalable solution. Treat the answer as advisory; verify it against code/tests, choose the best path, then act this turn. The user can interrupt the session if they disagree; do not stop waiting for user interjection.'
-      if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "1" ]; then
-        fix_clause='ALIGN: consult DO:MON first; if you explicitly choose the Codex edit path under ASK_CODEX_ALLOW_EDITS=1, verify the direct edits before continuing. If the advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
+      if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "0" ]; then
+        fix_clause='ALIGN: codex edits are disabled this run (ASK_CODEX_ALLOW_EDITS=0) -- have DO:MON propose the fix, apply it yourself, then verify. If DO:MON advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
       else
-        fix_clause='ALIGN: have DO:MON propose the fix, apply it yourself, then verify. If DO:MON advice is insufficient, use codex --decide or dispatch do:distinguished-engineer / do:test-engineer and continue this turn. Direct Codex edits require ASK_CODEX_ALLOW_EDITS=1.'
+        fix_clause='ALIGN: consult DO:MON first; codex edits are enabled by default, so you may take the Codex edit path -- verify the direct edits before continuing. If the advice is insufficient, dispatch do:distinguished-engineer / do:test-engineer and continue this turn.'
       fi
       sections=()
       [ -n "$frontier" ] && sections+=("$(printf 'WORK FRONTIER:\n%s\n1. Finish the requested objective.\n2. Classify discovered work.\n3. Immediately drain the discovered-work frontier when it is safe, relevant, and tool-executable.\n4. Stop only when the frontier contains no worthwhile safe work, or only user-owned/irreversible decisions remain.\nClean up agent-owned processes before stopping. Terminate dev servers, watchers, worker pools, hook/helper shells, and background toolchain commands you started; do not kill shared or user-owned processes unless the user explicitly authorizes it.\nAgent-created rollout / flip / readiness gates are frontier work, not terminal user decisions.\nExecution loop: objective -> required fixes -> verification -> discovered frontier -> drain -> verify -> stop.' "$frontier")")

@@ -80,8 +80,12 @@ test("adversarial prompt checks bugs, discovered frontier risk, and tech debt", 
   assert.equal(r.blocked, false);
   const prompt = readFileSync(cap, "utf8");
   assert.match(prompt, /bugs introduced or left unfixed/);
-  assert.match(prompt, /discovered frontier work that can cause undesired behavior/);
-  assert.match(prompt, /created or preserved tech debt/);
+  assert.match(prompt, /discovered frontier work left undone/);
+  assert.match(prompt, /tech debt created or preserved/);
+  // Empower contract (2026-06-30): the review must GROUND in the real files (not the pasted text)
+  // and APPLY the fix when one is better -- not a shallow, advise-only pass.
+  assert.match(prompt, /GROUND the review in the actual repo/);
+  assert.match(prompt, /APPLY it directly/);
 });
 
 test("adversarial-mode CLI: ON by default, off persists a marker, toggle flips", { skip: SKIP }, () => {

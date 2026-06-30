@@ -5,13 +5,14 @@
 # its own evidence. Claude's only added input is the optional question string.
 #
 # HONESTY ABOUT GUARANTEES (do not overclaim — see codex review 2026-05-26):
-#   * NOT enforced read-only. We pass --dangerously-bypass-approvals-and-sandbox
-#     because genuine `-s read-only` is BROKEN on this Windows host (the Windows
+#   * NOT sandbox-enforced. We pass --dangerously-bypass-approvals-and-sandbox
+#     because genuine `-s` sandboxing is BROKEN on this Windows host (the Windows
 #     sandbox errors with "spawn setup refresh" and policy-blocks pwsh) AND the
-#     workspace root is not a git repo (read-only mode refuses "untrusted dir").
-#     Under the bypass flag Codex effectively has FULL filesystem access. This is
-#     a consult by CONVENTION (read + advise), not a sandbox-enforced guarantee.
-#     `-s read-only` is left on as a best-effort hint; the bypass flag overrides it.
+#     workspace root is not a git repo (sandbox mode refuses "untrusted dir").
+#     Under the bypass flag Codex has FULL filesystem access. By DEFAULT the sandbox
+#     intent is workspace-write and Codex EDITS when it judges a fix better (the
+#     empowered closer); ASK_CODEX_ALLOW_EDITS=0 switches to read-only + advise-only,
+#     but that is by CONVENTION (the closer prose + -s flag), not a hard guarantee.
 #   * NOT the whole chat. Tool-result bodies are elided, only the last ~80KB is
 #     sent, and the latest user message is sent separately in full.
 #
@@ -19,10 +20,10 @@
 #         codex.sh                  # no question -> Codex infers the open
 #                                       #   question from the transcript
 # Env:    ASK_CODEX_WORKSPACE  override the -C workspace (default: cwd, Win form)
-#         ASK_CODEX_TIMEOUT    max Codex runtime in WHOLE SECONDS, default 300
+#         ASK_CODEX_TIMEOUT    max Codex runtime in WHOLE SECONDS, default 1200
 #                              (positive integer; a trailing 's' is tolerated;
 #                               non-numeric/duration forms like '5m' are rejected
-#                               and fall back to 300)
+#                               and fall back to 1200)
 #         ASK_CODEX_ALLOW_EDITS  DEFAULT ON. Codex runs the workspace-write sandbox
 #                              with the empowered "Distinguished Engineer" closer and
 #                              EDITS the repo by default. SECURITY: an external LLM
@@ -45,20 +46,22 @@ if [ -z "$CODEX" ]; then
 fi
 PROJECTS_DIR="${HOME}/.claude/projects"
 TAIL_BYTES=80000
-# Default lowered 600->300 (2026-06-15 owner opt): the Stop integrity-review uses 300s
-# and is sufficient; env ASK_CODEX_TIMEOUT still overrides. Numeric seconds for the
+# Default raised to 1200 (2026-06-30 owner directive: exercise codex at full capability) so a
+# deep, file-grounded xhigh consult that also APPLIES fixes is not cut off mid-reason; env
+# ASK_CODEX_TIMEOUT still overrides. The reconnect fail-fast + winpid reap below still bound a
+# stuck network, so a generous cap does not risk an orphaned codex.exe. Numeric seconds for the
 # manual reap loop below (strip a trailing 's' if the env value carried one).
-CODEX_TIMEOUT="${ASK_CODEX_TIMEOUT:-300}"
+CODEX_TIMEOUT="${ASK_CODEX_TIMEOUT:-1200}"
 CODEX_TIMEOUT="${CODEX_TIMEOUT%s}"
 # Validate: must be a positive integer number of seconds. Duration forms (e.g. "5m")
 # or junk would silently break the integer comparison in the reap loop, so reject
 # them and fall back to the safe default rather than running effectively unbounded.
 case "$CODEX_TIMEOUT" in
   ''|*[!0-9]*)
-    echo "codex: ASK_CODEX_TIMEOUT must be positive integer seconds; got '${ASK_CODEX_TIMEOUT:-}'. Using 300." >&2
-    CODEX_TIMEOUT=300 ;;
+    echo "codex: ASK_CODEX_TIMEOUT must be positive integer seconds; got '${ASK_CODEX_TIMEOUT:-}'. Using 1200." >&2
+    CODEX_TIMEOUT=1200 ;;
 esac
-[ "$CODEX_TIMEOUT" -ge 1 ] 2>/dev/null || CODEX_TIMEOUT=300
+[ "$CODEX_TIMEOUT" -ge 1 ] 2>/dev/null || CODEX_TIMEOUT=1200
 # Pin model + reasoning effort so the consult ALWAYS runs high-reasoning GPT-5.5,
 # independent of ~/.codex/config.toml defaults or per-project overrides.
 CODEX_MODEL="gpt-5.5"
@@ -200,7 +203,7 @@ QUESTION="${1:-}"
 # workspace on every call. Kill switch: ASK_CODEX_ALLOW_EDITS=0 forces read-only
 # "Please advise." (the prior advise-only behavior).
 CODEX_SANDBOX="workspace-write"
-CODEX_CLOSER="You are a Distinguished Software Engineer. Evaluate, state your approach, then act. Do not accept deferment when a practical fix exists."
+CODEX_CLOSER="You are a Distinguished Software Engineer with full workspace access. Review and reason at MAXIMAL depth -- ground every claim in the actual files and tests, do not skim or give a shallow pass. When you judge a change is better, make it directly: implement the whole, correct, lasting fix with its tests; do not defer, stub, advise-only, or ship a partial/minimal-but-incomplete patch when a complete fix is in reach. State exactly what you changed and why. Leave for the user only what is genuinely irreversible, out of scope, or a human-owned decision."
 CODEX_EDIT_NOTE="WORKSPACE-WRITE (edits allowed)"
 if [ "${ASK_CODEX_ALLOW_EDITS:-}" = "0" ]; then
   CODEX_SANDBOX="read-only"
@@ -231,8 +234,9 @@ trap 'rm -f "$PROMPT_FILE" "$ANSWER_FILE"' EXIT
 
 # --- fire (status to stderr so stdout stays the verbatim Codex response) ------
 # Flags: --dangerously-bypass-approvals-and-sandbox is REQUIRED here (genuine
-# -s read-only is broken on this Windows host and refuses the non-git workspace
-# root). It gives Codex full FS access; the consult is read-only by convention.
+# -s sandboxing is broken on this Windows host and refuses the non-git workspace
+# root). It gives Codex full FS access; by DEFAULT the sandbox is workspace-write
+# and Codex EDITS when it judges better (ASK_CODEX_ALLOW_EDITS=0 -> read-only/advise).
 # --- derive a human session name from the transcript ai-title (best-effort) ---
 # Filenames carry "<slug>-<session-id>" so each consult is findable by TOPIC and
 # by session. The harness writes type:"ai-title" lines (camelCase .aiTitle) into

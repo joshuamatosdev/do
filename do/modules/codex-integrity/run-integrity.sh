@@ -13,7 +13,8 @@
 #                               exec / --sandbox / read-only / -C / <dir> / -). Each line is one
 #                               literal argument: no shell parsing, so a path with metacharacters is
 #                               passed verbatim and cannot inject. Ignored if INTEGRITY_CODEX_CMD set.
-#         INTEGRITY_CODEX_TIMEOUT  hard timeout in seconds   (default: 300)
+#         INTEGRITY_CODEX_TIMEOUT  hard timeout in seconds   (default: 600 -- raised from 300 so a
+#                               deep, file-grounded xhigh review that also applies fixes is not cut off)
 #         INTEGRITY_FORCE_MANUAL_TIMEOUT  set (non-empty) -> skip GNU `timeout` and always use the
 #                               manual background + poll + process-tree reap. Auto-used whenever GNU
 #                               `timeout` is absent; set it explicitly on hosts where GNU `timeout`
@@ -31,7 +32,7 @@
 set -uo pipefail
 
 packet="${1:-}"
-timeout_s="${INTEGRITY_CODEX_TIMEOUT:-300}"
+timeout_s="${INTEGRITY_CODEX_TIMEOUT:-600}"
 # repoRoot = this script's dir up three (codex-integrity -> modules -> do -> repo root).
 self_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 repo_root="$(cd "$self_dir/../../.." && pwd)"

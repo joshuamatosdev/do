@@ -46,15 +46,19 @@ test("codex-integrity row discloses that assistant turn text is sent to an exter
   const lines = README.split("\n");
   const row = lines.find((l) => l.includes("`codex-integrity`"));
   assert.ok(row, "codex-integrity row must exist in the modules table");
-  // Old description said nothing about external LLM or data transmission.
-  // New description must mention external LLM and read-only.
+  // The row must disclose the external LLM, that (scrubbed) turn text is sent, that codex EDITS the
+  // repo by default, and the read-only kill switch -- the honest published contract for every install.
   assert.ok(
     row.includes("external") && row.includes("LLM"),
     "codex-integrity row must disclose that an external LLM is called"
   );
   assert.ok(
-    row.includes("read-only"),
-    "codex-integrity row must disclose read-only file access"
+    /edit/i.test(row),
+    "codex-integrity row must disclose that codex edits the repo by default"
+  );
+  assert.ok(
+    row.includes("ASK_CODEX_ALLOW_EDITS"),
+    "codex-integrity row must disclose the read-only kill switch (ASK_CODEX_ALLOW_EDITS=0)"
   );
   // Must mention that turn text is sent (scrubbed).
   assert.ok(

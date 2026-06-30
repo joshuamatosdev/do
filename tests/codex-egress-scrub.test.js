@@ -6,13 +6,15 @@ const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 const { bashEnv, bashPath, repoRoot: ROOT } = require("./bash-paths");
 
-// Regression coverage for the codex-integrity egress hardening:
+// Coverage for the codex-integrity EGRESS hardening (the secret-scrub invariant) AND the turn-end
+// review's empower contract (2026-06-30 owner directive: exercise codex at full capability):
 //   (1) turn text is secret-scrubbed BEFORE it is piped to the external codex CLI,
 //   (2) scrubbing is fail-closed -- a broken scrubber must NOT leak raw text,
-//   (3) codex runs read-only (no --dangerously-bypass-approvals-and-sandbox),
-//   (4) module.json discloses the external-LLM egress + read-only execution.
-// These would all FAIL against the pre-fix scripts (raw packet piped to codex, dangerous flag,
-// no disclosure) and PASS against the hardened ones.
+//   (3) the default codex invocation empowers edits (workspace-write via the proven bypass flag)
+//       with a read-only kill switch (ASK_CODEX_ALLOW_EDITS=0),
+//   (4) module.json discloses the external-LLM egress + that codex edits by default (kill switch).
+// (1)(2) are the egress invariant and FAIL against any script that pipes the raw packet to codex;
+// empowering WRITE does not relax them. (3)(4) pin the empower contract.
 
 const MODDIR = join(ROOT, "do", "modules", "codex-integrity");
 const RUNNER = bashPath(join(MODDIR, "run-integrity.sh"));
@@ -189,17 +191,21 @@ test("adversarial hook is fail-closed: broken scrubber -> no codex egress", { sk
 
 const RUNNER_SRC = join(MODDIR, "run-integrity.sh");
 
-test("codex-stop.sh no longer uses the dangerous bypass flag and runs read-only", () => {
+test("codex-stop.sh empowers the turn-end review to edit by default, with a read-only kill switch", () => {
   const src = readFileSync(HOOK_SRC, "utf8");
-  assert.ok(!src.includes("dangerously-bypass") || /former --dangerously-bypass/.test(src),
-    "dangerous bypass flag not used (only referenced in the historical comment)");
-  // The dangerous flag must never appear on an actual exported codex invocation line.
-  const liveBypass = src.split("\n").some((l) =>
-    l.includes("dangerously-bypass") && !l.trim().startsWith("#"));
-  assert.ok(!liveBypass, "dangerous bypass flag absent from every live (non-comment) line");
-  // The default codex invocation must request a read-only sandbox.
-  assert.match(src, /--sandbox\s*\n?\s*read-only|--sandbox read-only|-s read-only/,
-    "codex runs with a read-only sandbox");
+  const liveSrc = src.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n");
+  // DEFAULT: codex runs workspace-write (can apply fixes) via the proven bypass invocation -- genuine
+  // sandboxing is broken on this Windows host, so this is the same flag skills/codex/codex.sh uses.
+  assert.match(liveSrc, /workspace-write/, "default integrity invocation requests workspace-write so codex can apply fixes");
+  assert.match(liveSrc, /dangerously-bypass-approvals-and-sandbox/, "uses the proven bypass invocation that actually runs on this host");
+  // Max effort pinned explicitly (no silent drift to a weaker config default).
+  assert.match(liveSrc, /model_reasoning_effort/, "pins reasoning effort on the review");
+  assert.match(liveSrc, /xhigh/, "pins xhigh (max reasoning) on the review");
+  // Kill switch: ASK_CODEX_ALLOW_EDITS=0 forces read-only / advise-only.
+  assert.match(liveSrc, /ASK_CODEX_ALLOW_EDITS/, "honors the ASK_CODEX_ALLOW_EDITS kill switch");
+  assert.match(liveSrc, /read-only/, "kill-switch path requests a read-only sandbox");
+  // Injection-safe literal-argv mechanism preserved (project dir is one literal arg, never a shell string).
+  assert.match(src, /INTEGRITY_CODEX_ARGV=/, "uses the injection-safe literal-argv mechanism");
 });
 
 test("codex-stop.sh does not interpolate the project dir into a bash -c shell string", () => {
@@ -231,11 +237,14 @@ test("run-integrity.sh runs the default scrubber/codex as argv, not via bash -c 
   }
 });
 
-test("module.json discloses external-LLM egress and read-only execution", () => {
+test("module.json discloses external-LLM egress and that codex edits by default (with a read-only kill switch)", () => {
   const m = JSON.parse(readFileSync(join(MODDIR, "module.json"), "utf8"));
   assert.match(m.description, /external/i, "description discloses external LLM egress");
   assert.ok(m.disclosure, "structured disclosure block present");
   assert.equal(m.disclosure.sendsToExternalLLM, true, "discloses it sends data to an external LLM");
   assert.match(String(m.disclosure.dataSent), /scrub/i, "discloses turn text is scrubbed before egress");
-  assert.match(String(m.disclosure.execution), /read-only/i, "discloses read-only execution");
+  // The egress scrub is unchanged, but execution is now WRITE-by-default -- the disclosure must say so,
+  // and must name the read-only kill switch, so the published contract is honest for every install.
+  assert.match(String(m.disclosure.execution), /workspace-write|edit/i, "discloses codex edits the repo by default");
+  assert.match(String(m.disclosure.execution), /ASK_CODEX_ALLOW_EDITS|read-only/i, "discloses the read-only kill switch");
 });
